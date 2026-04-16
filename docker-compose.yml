@@ -1,0 +1,58 @@
+services:
+  # SimSat dashboard (required by SimSat sim)
+  simsat-dashboard:
+    build:
+      context: ./SimSat
+      dockerfile: Dockerfile.dashboard
+    container_name: simsat-dashboard
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_DEBUG=1
+      - DJANGO_SECRET_KEY=dev-secret-key-change-me-in-production
+    networks:
+      - triage-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/api/telemetry/recent/\")'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # SimSat simulator + API
+  simsat-api:
+    build:
+      context: ./SimSat
+      dockerfile: Dockerfile.sim
+    container_name: simsat-api
+    ports:
+      - "9005:8000"
+    environment:
+      - DASHBOARD_URL=http://simsat-dashboard:8000
+      - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN:-}
+    depends_on:
+      simsat-dashboard:
+        condition: service_healthy
+    networks:
+      - triage-network
+    shm_size: '256mb'
+
+  # Triage dashboard (our app)
+  triage:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: triage-dashboard
+    ports:
+      - "8080:8080"
+    environment:
+      - SIMSAT_URL=http://simsat-api:8000
+      - HF_TOKEN=${HF_TOKEN:-}
+    depends_on:
+      - simsat-api
+    networks:
+      - triage-network
+
+networks:
+  triage-network:
+    driver: bridge

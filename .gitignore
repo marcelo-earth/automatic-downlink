@@ -40,5 +40,12 @@ docker-compose.override.yml
 # Modal
 .modal/
 
+# Training
+training/leap-finetune/
+training/data/
+
+# Claude
+.claude/
+
 # Misc
 *.log

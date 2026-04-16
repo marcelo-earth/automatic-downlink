@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>automatic-downlink — Ground Station</title>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --surface: #111827;
+            --border: #1f2937;
+            --text: #e5e7eb;
+            --text-dim: #9ca3af;
+            --critical: #ef4444;
+            --high: #f97316;
+            --medium: #eab308;
+            --low: #6b7280;
+            --skip: #374151;
+            --accent: #3b82f6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .header {
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .header .status {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .header .status .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: calc(100vh - 57px);
+        }
+        .sidebar {
+            border-right: 1px solid var(--border);
+            padding: 20px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .stat-card .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .stat-card .value.savings { color: #22c55e; }
+        .priority-bars {
+            margin-top: 16px;
+        }
+        .priority-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .priority-bar .bar-label {
+            width: 70px;
+            color: var(--text-dim);
+        }
+        .priority-bar .bar-track {
+            flex: 1;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            margin: 0 8px;
+            overflow: hidden;
+        }
+        .priority-bar .bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+        .priority-bar .bar-count { width: 30px; text-align: right; }
+        .feed {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .feed-header {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+        .decision {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .decision .badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            min-width: 65px;
+            text-align: center;
+        }
+        .badge.CRITICAL { background: var(--critical); color: white; }
+        .badge.HIGH { background: var(--high); color: white; }
+        .badge.MEDIUM { background: var(--medium); color: #1a1a1a; }
+        .badge.LOW { background: var(--low); color: white; }
+        .badge.SKIP { background: var(--skip); color: var(--text-dim); }
+        .decision .content { flex: 1; }
+        .decision .desc {
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+        .decision .meta {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        .decision .categories {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        .decision .categories span {
+            font-size: 10px;
+            background: var(--border);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: var(--text-dim);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-dim);
+        }
+        .empty-state h2 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
+        .empty-state p { font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>automatic-downlink <span style="color: var(--text-dim); font-weight: 400;">/ ground station</span></h1>
+        <div class="status"><span class="dot"></span>Monitoring orbit</div>
+    </div>
+
+    <div class="grid">
+        <div class="sidebar">
+            <div class="stat-card">
+                <div class="label">Images Analyzed</div>
+                <div class="value">{{ stats.total_images }}</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="label">Bandwidth Saved</div>
+                <div class="value savings">{{ stats.savings_percent }}%</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="label">Alerts</div>
+                <div class="value" style="color: var(--critical)">{{ stats.critical_count }}</div>
+                <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">
+                    + {{ stats.high_count }} high priority
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="label">Priority Distribution</div>
+                <div class="priority-bars">
+                    {% set total = stats.total_images if stats.total_images > 0 else 1 %}
+                    {% for level, color in [("CRITICAL", "#ef4444"), ("HIGH", "#f97316"), ("MEDIUM", "#eab308"), ("LOW", "#6b7280"), ("SKIP", "#374151")] %}
+                    {% set count = stats.by_priority.get(level, 0) %}
+                    <div class="priority-bar">
+                        <span class="bar-label">{{ level }}</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width: {{ (count / total * 100)|round }}%; background: {{ color }}"></div>
+                        </div>
+                        <span class="bar-count">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="feed">
+            <div class="feed-header">Triage Feed</div>
+
+            {% if decisions %}
+                {% for d in decisions|reverse %}
+                <div class="decision">
+                    <span class="badge {{ d.priority }}">{{ d.priority }}</span>
+                    <div class="content">
+                        <div class="desc">{{ d.description }}</div>
+                        <div class="meta">
+                            {{ d.image_id }} &middot; {{ d.source }} &middot; {{ d.timestamp }}
+                        </div>
+                        {% if d.categories %}
+                        <div class="categories">
+                            {% for cat in d.categories %}
+                            <span>{{ cat }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <h2>Waiting for satellite data</h2>
+                    <p>Triage decisions will appear here as the satellite captures images.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Auto-refresh every 5 seconds
+        setTimeout(() => location.reload(), 5000);
+    </script>
+</body>
+</html>
