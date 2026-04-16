@@ -1,0 +1,3 @@
+[submodule "SimSat"]
+	path = SimSat
+	url = https://github.com/DPhi-Space/SimSat.git
