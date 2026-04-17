@@ -37,16 +37,20 @@ services:
       - triage-network
     shm_size: '256mb'
 
-  # Triage dashboard (our app)
+  # Triage engine + dashboard (our app)
   triage:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        HF_TOKEN: ${HF_TOKEN:-}
     container_name: triage-dashboard
     ports:
       - "8080:8080"
     environment:
       - SIMSAT_URL=http://simsat-api:8000
+      - TRIAGE_PROFILE=${TRIAGE_PROFILE:-default}
+      - POLL_INTERVAL=${POLL_INTERVAL:-30}
       - HF_TOKEN=${HF_TOKEN:-}
     depends_on:
       - simsat-api

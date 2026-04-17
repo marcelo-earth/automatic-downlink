@@ -16,6 +16,8 @@ from fastapi.templating import Jinja2Templates
 
 from src.triage.schemas import BandwidthStats, Priority, TriageDecision
 
+# Configure logging so our messages show up alongside uvicorn's
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
