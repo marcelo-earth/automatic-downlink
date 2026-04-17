@@ -132,9 +132,25 @@ def caption_to_triage_json(caption: str) -> str:
     return json.dumps(triage)
 
 
-def convert_to_vlm_sft(caption: str, image_path: str) -> dict:
-    """Convert a single VRSBench sample to leap-finetune VLM SFT format."""
-    triage_json = caption_to_triage_json(caption)
+def convert_to_vlm_sft(caption: str, image_path: str, labels: dict | None = None) -> dict:
+    """Convert a single VRSBench sample to leap-finetune VLM SFT format.
+
+    Args:
+        caption: Image description from VRSBench.
+        image_path: Path to the image file.
+        labels: Pre-classified labels with priority/reasoning/categories.
+            If None, falls back to keyword-based heuristics.
+    """
+    if labels:
+        triage = {
+            "description": caption,
+            "priority": labels["priority"],
+            "reasoning": labels["reasoning"],
+            "categories": labels["categories"],
+        }
+        triage_json = json.dumps(triage)
+    else:
+        triage_json = caption_to_triage_json(caption)
 
     return {
         "messages": [
@@ -187,7 +203,21 @@ def _extract_caption(conversations) -> str | None:
     return gpt_response
 
 
-def prepare_local(limit: int | None = None, output_dir: str = "training/data") -> None:
+def _load_labels(labels_path: str) -> dict[int, dict]:
+    """Load pre-classified labels from JSONL, keyed by line number."""
+    labels = {}
+    with open(labels_path) as f:
+        for idx, line in enumerate(f):
+            labels[idx] = json.loads(line)
+    logger.info("Loaded %d pre-classified labels from %s", len(labels), labels_path)
+    return labels
+
+
+def prepare_local(
+    limit: int | None = None,
+    output_dir: str = "training/data",
+    labels_path: str | None = None,
+) -> None:
     """Prepare dataset locally by downloading VRSBench JSON + images directly."""
     import zipfile
     from collections import Counter
@@ -196,6 +226,12 @@ def prepare_local(limit: int | None = None, output_dir: str = "training/data") -
 
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
+
+    labels_by_id = _load_labels(labels_path) if labels_path else {}
+    if labels_by_id:
+        logger.info("Using pre-classified labels (knowledge distillation)")
+    else:
+        logger.info("No labels file — using keyword-based heuristics")
 
     images_dir = out / "images"
     images_dir.mkdir(exist_ok=True)
@@ -226,6 +262,7 @@ def prepare_local(limit: int | None = None, output_dir: str = "training/data") -
 
     # Process items — extract captions and convert to SFT format
     samples = []
+    caption_idx = 0
     skipped = 0
     for i, item in enumerate(all_items):
         if limit and len(samples) >= limit:
@@ -242,10 +279,13 @@ def prepare_local(limit: int | None = None, output_dir: str = "training/data") -
         img_path = img_root / image_filename
         if not img_path.exists():
             skipped += 1
+            caption_idx += 1
             continue
 
-        sample = convert_to_vlm_sft(caption, str(img_path.resolve()))
+        labels = labels_by_id.get(caption_idx)
+        sample = convert_to_vlm_sft(caption, str(img_path.resolve()), labels=labels)
         samples.append(sample)
+        caption_idx += 1
 
         if len(samples) % 1000 == 0:
             logger.info("Processed %d samples...", len(samples))
@@ -286,6 +326,7 @@ def main():
     parser = argparse.ArgumentParser(description="Prepare VRSBench for triage fine-tuning")
     parser.add_argument("--limit", type=int, default=None, help="Limit samples (for testing)")
     parser.add_argument("--output", default="training/data", help="Output directory")
+    parser.add_argument("--labels", default=None, help="Path to classified_captions.jsonl (LLM-generated labels)")
     parser.add_argument("--modal", action="store_true", help="Run on Modal (not yet implemented)")
     args = parser.parse_args()
 
@@ -293,7 +334,7 @@ def main():
         logger.error("Modal mode not yet implemented. Use --limit for local testing first.")
         sys.exit(1)
 
-    prepare_local(limit=args.limit, output_dir=args.output)
+    prepare_local(limit=args.limit, output_dir=args.output, labels_path=args.labels)
 
 
 if __name__ == "__main__":

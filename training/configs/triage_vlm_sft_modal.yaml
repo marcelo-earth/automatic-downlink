@@ -3,7 +3,7 @@ model_name: "LFM2.5-VL-450M"
 training_type: "vlm_sft"
 
 dataset:
-  path: "/satellite-vlm/data/train_modal.jsonl"
+  path: "/satellite-vlm/data/train_v2_modal.jsonl"
   type: "vlm_sft"
   limit: null
   test_size: 0.1
