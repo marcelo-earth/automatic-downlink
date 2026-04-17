@@ -43,6 +43,7 @@ docker-compose.override.yml
 # Training
 training/leap-finetune/
 training/data/
+training/outputs/
 
 # Claude
 .claude/

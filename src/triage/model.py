@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import platform
 from typing import TYPE_CHECKING
 
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-MODEL_ID = "LiquidAI/LFM2.5-VL-450M"
+MODEL_ID = os.environ.get("MODEL_ID", "marcelo-earth/LFM2.5-VL-450M-satellite-triage")
 
 # Recommended generation params from model card
 GENERATION_KWARGS = {

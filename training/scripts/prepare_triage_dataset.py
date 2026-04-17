@@ -157,62 +157,96 @@ def convert_to_vlm_sft(caption: str, image_path: str) -> dict:
     }
 
 
+def _extract_caption(conversations) -> str | None:
+    """Extract the caption response from VRSBench's conversations field."""
+    if isinstance(conversations, str):
+        try:
+            conversations = json.loads(conversations.replace("'", '"'))
+        except json.JSONDecodeError:
+            return None
+    if not isinstance(conversations, list):
+        return None
+    for turn in conversations:
+        if turn.get("from") == "gpt" and "[caption]" not in turn.get("value", ""):
+            return turn["value"].strip()
+    return None
+
+
 def prepare_local(limit: int | None = None, output_dir: str = "training/data") -> None:
-    """Prepare dataset locally using HuggingFace datasets streaming."""
-    from datasets import load_dataset
+    """Prepare dataset locally by downloading VRSBench JSON + images directly."""
+    import zipfile
+    from collections import Counter
+
+    from huggingface_hub import hf_hub_download
 
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Loading VRSBench dataset via streaming...")
-    ds = load_dataset("xiang709/VRSBench", split="train", streaming=True)
-
     images_dir = out / "images"
     images_dir.mkdir(exist_ok=True)
 
-    train_path = out / "train.jsonl"
-    eval_path = out / "eval.jsonl"
+    # Download annotation JSON
+    logger.info("Downloading VRSBench_train.json...")
+    json_path = hf_hub_download("xiang709/VRSBench", "VRSBench_train.json", repo_type="dataset")
+    with open(json_path) as f:
+        all_items = json.load(f)
+    logger.info("Loaded %d items from VRSBench_train.json", len(all_items))
 
+    # Download and extract images
+    logger.info("Downloading Images_train.zip (this may take a few minutes)...")
+    zip_path = hf_hub_download("xiang709/VRSBench", "Images_train.zip", repo_type="dataset")
+    logger.info("Extracting images...")
+    with zipfile.ZipFile(zip_path) as zf:
+        zf.extractall(images_dir)
+    logger.info("Images extracted to %s", images_dir)
+
+    # Find the actual image directory (zip may contain a subfolder)
+    image_subdirs = list(images_dir.glob("**/"))
+    png_files = list(images_dir.rglob("*.png"))
+    if png_files:
+        img_root = png_files[0].parent
+    else:
+        img_root = images_dir
+    logger.info("Image root: %s (%d .png files found)", img_root, len(png_files))
+
+    # Process items — extract captions and convert to SFT format
     samples = []
-    for i, row in enumerate(ds):
-        if limit and i >= limit:
+    skipped = 0
+    for i, item in enumerate(all_items):
+        if limit and len(samples) >= limit:
             break
 
-        caption = row.get("caption", "")
-        image_filename = row.get("image", "")  # filename like "00002_0000.png"
+        conversations_str = item.get("conversations", "")
+        image_filename = item.get("image", "")
 
+        caption = _extract_caption(conversations_str)
         if not caption:
+            skipped += 1
             continue
 
-        # VRSBench stores images as filenames — they're extracted from zip by HF.
-        # The image data is available via the HF cache. We save locally.
-        # For streaming, we use the filename as image_path (for Modal, images will be on volume).
-        img_filename = f"vrsbench_{i:06d}.jpg"
-        img_path = images_dir / img_filename
-
-        # If dataset provides PIL image directly (some configs do), save it
-        # Otherwise, just reference the filename for Modal processing
+        img_path = img_root / image_filename
         if not img_path.exists():
-            # Mark as placeholder — actual images will be fetched in Modal
-            img_path_str = image_filename
-        else:
-            img_path_str = str(img_path.resolve())
+            skipped += 1
+            continue
 
-        # Convert to VLM SFT format
-        sample = convert_to_vlm_sft(caption, img_path_str)
+        sample = convert_to_vlm_sft(caption, str(img_path.resolve()))
         samples.append(sample)
 
-        if (i + 1) % 100 == 0:
-            logger.info("Processed %d samples", i + 1)
+        if len(samples) % 1000 == 0:
+            logger.info("Processed %d samples...", len(samples))
 
-    # Shuffle and split
+    logger.info("Converted %d samples (%d skipped)", len(samples), skipped)
+
+    # Shuffle and split 90/10
     random.seed(42)
     random.shuffle(samples)
     split_idx = int(len(samples) * 0.9)
     train_samples = samples[:split_idx]
     eval_samples = samples[split_idx:]
 
-    # Write JSONL
+    train_path = out / "train.jsonl"
+    eval_path = out / "eval.jsonl"
+
     with open(train_path, "w") as f:
         for s in train_samples:
             f.write(json.dumps(s) + "\n")
@@ -222,12 +256,9 @@ def prepare_local(limit: int | None = None, output_dir: str = "training/data") -
             f.write(json.dumps(s) + "\n")
 
     logger.info("Written %d train, %d eval samples", len(train_samples), len(eval_samples))
-    logger.info("Images: %s", images_dir)
     logger.info("Train JSONL: %s", train_path)
     logger.info("Eval JSONL: %s", eval_path)
 
-    # Print priority distribution
-    from collections import Counter
     priorities = Counter()
     for s in samples:
         assistant_msg = s["messages"][2]["content"][0]["text"]

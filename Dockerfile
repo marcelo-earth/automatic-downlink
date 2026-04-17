@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir ".[dashboard]"
 ARG HF_TOKEN=""
 RUN python -c "\
 from huggingface_hub import snapshot_download; \
-snapshot_download('LiquidAI/LFM2.5-VL-450M', token='${HF_TOKEN}' or None)"
+snapshot_download('marcelo-earth/LFM2.5-VL-450M-satellite-triage', token='${HF_TOKEN}' or None)"
 
 # Copy source
 COPY src/ src/
