@@ -157,19 +157,34 @@ def convert_to_vlm_sft(caption: str, image_path: str) -> dict:
     }
 
 
+def _is_caption_task(conversations) -> bool:
+    """Check if this VRSBench item is a [caption] task (not [vqa] or [refer])."""
+    if not isinstance(conversations, list) or len(conversations) < 1:
+        return False
+    human_turn = conversations[0].get("value", "")
+    return "[caption]" in human_turn
+
+
 def _extract_caption(conversations) -> str | None:
-    """Extract the caption response from VRSBench's conversations field."""
+    """Extract the caption response from a VRSBench [caption] task."""
     if isinstance(conversations, str):
         try:
             conversations = json.loads(conversations.replace("'", '"'))
         except json.JSONDecodeError:
             return None
-    if not isinstance(conversations, list):
+    if not isinstance(conversations, list) or len(conversations) < 2:
         return None
-    for turn in conversations:
-        if turn.get("from") == "gpt" and "[caption]" not in turn.get("value", ""):
-            return turn["value"].strip()
-    return None
+    if not _is_caption_task(conversations):
+        return None
+    gpt_response = conversations[1].get("value", "").strip()
+    if len(gpt_response) < 20:
+        return None
+    # Strip VRSBench boilerplate prefix
+    boilerplate = "The image, sourced from GoogleEarth, "
+    if gpt_response.startswith(boilerplate):
+        gpt_response = gpt_response[len(boilerplate):]
+        gpt_response = gpt_response[0].upper() + gpt_response[1:] if gpt_response else gpt_response
+    return gpt_response
 
 
 def prepare_local(limit: int | None = None, output_dir: str = "training/data") -> None:
