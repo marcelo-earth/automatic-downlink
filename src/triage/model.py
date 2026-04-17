@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-MODEL_ID = os.environ.get("MODEL_ID", "marcelo-earth/LFM2.5-VL-450M-satellite-triage")
+MODEL_ID = os.environ.get("MODEL_ID", "LiquidAI/LFM2.5-VL-450M")
 
 # Recommended generation params from model card
 GENERATION_KWARGS = {
