@@ -15,7 +15,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-MODEL_ID = os.environ.get("MODEL_ID", "LiquidAI/LFM2.5-VL-450M")
+MODEL_ID = os.environ.get("MODEL_ID", "marcelo-earth/LFM2.5-VL-450M-satellite-triage")
+BASE_MODEL_ID = "LiquidAI/LFM2.5-VL-450M"
 
 # Recommended generation params from model card
 GENERATION_KWARGS = {
@@ -65,7 +66,7 @@ class TriageModel:
         if self.device != "cuda":
             self.model = self.model.to(self.device)
 
-        self.processor = AutoProcessor.from_pretrained(self.model_id)
+        self.processor = AutoProcessor.from_pretrained(BASE_MODEL_ID)
         logger.info("Model loaded on %s (%s).", self.device, dtype)
 
     def generate(self, image: Image.Image, system_prompt: str, user_prompt: str) -> str:
