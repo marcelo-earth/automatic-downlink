@@ -66,21 +66,42 @@ The triage engine will start polling SimSat for satellite images and analyzing t
 
 ## Fine-Tuning
 
-We fine-tuned LFM2.5-VL-450M on 20,264 satellite image captions from [VRSBench](https://huggingface.co/datasets/xiang709/VRSBench), converted to triage JSON format.
+We fine-tuned LFM2.5-VL-450M on 20,264 satellite image captions from [VRSBench](https://huggingface.co/datasets/xiang709/VRSBench), converted to triage JSON via knowledge distillation (Claude-generated labels replacing keyword heuristics).
 
-| | Base Model | Fine-Tuned |
-|--|-----------|------------|
-| Valid JSON output | 66% | **100%** |
-| Correct priority | 33% | **100%** |
-| Image-specific descriptions | 33% | **100%** |
+| Metric | Base Model | Fine-Tuned (Exp 2) |
+|--------|-----------|-------------------|
+| Valid JSON output | 100% | **100%** |
+| Priority accuracy | 2% | **50%** |
+| Bandwidth savings | 0% | **~95%** |
+
+The base model classifies everything as CRITICAL (useless). The fine-tuned model produces coherent triage JSON with specific descriptions and reasoning.
 
 **Model weights:** [marcelo-earth/LFM2.5-VL-450M-satellite-triage](https://huggingface.co/marcelo-earth/LFM2.5-VL-450M-satellite-triage)
+**Training labels:** [marcelo-earth/VRSBench-satellite-triage-labels](https://huggingface.co/datasets/marcelo-earth/VRSBench-satellite-triage-labels)
+**Full metrics:** [METRICS.md](METRICS.md)
 
-Training details:
-- **Method:** LoRA SFT (rank 16, alpha 32) via [leap-finetune](https://github.com/LiquidAI/leap-finetune)
-- **Infrastructure:** Modal H100, 2 epochs, lr=1e-4
-- **Data pipeline:** `training/scripts/prepare_triage_dataset.py`
-- **Config:** `training/configs/triage_vlm_sft_modal.yaml`
+### Reproduce Training
+
+**Option A — Kaggle (free, recommended):**
+
+1. Upload `training/notebooks/finetune_kaggle.ipynb` to [Kaggle](https://www.kaggle.com)
+2. Enable GPU T4 x2 (Settings → Accelerator)
+3. Add your `HF_TOKEN` in Secrets
+4. Run all cells (~45 min)
+
+**Option B — Modal (paid):**
+
+```bash
+cd training/leap-finetune
+uv run leap-finetune ../configs/triage_vlm_sft_modal.yaml
+```
+
+### Training Details
+
+- **Method:** LoRA SFT (rank 8, alpha 16, dropout 0.1)
+- **Labels:** Knowledge distillation — Claude classified 20,264 VRSBench captions into priority/reasoning/categories
+- **Data pipeline:** `training/scripts/prepare_triage_dataset.py --labels training/data/classified_captions.jsonl`
+- **Eval script:** `training/scripts/evaluate_model.py`
 
 ## Prompt Steering (No Re-training Needed)
 
@@ -111,7 +132,9 @@ src/
     └── templates/      # HTML dashboard
 training/
 ├── scripts/prepare_triage_dataset.py  # VRSBench → triage JSONL
-└── configs/triage_vlm_sft_modal.yaml  # Modal training config
+├── scripts/evaluate_model.py          # Stratified eval with metrics
+├── notebooks/finetune_kaggle.ipynb    # Fine-tune on Kaggle (free GPU)
+└── configs/                           # Modal training configs
 ```
 
 ## Environment Variables
