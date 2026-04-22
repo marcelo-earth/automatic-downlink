@@ -1,0 +1,4 @@
+{"id":"sentinel_amazon","image_path":"test_images/sentinel_amazon.png","expected_priority":"SKIP","notes":"Almost entirely cloud-covered frame with essentially no useful ground information.","source":"test_images","ambiguous":false}
+{"id":"sentinel_lima","image_path":"test_images/sentinel_lima.png","expected_priority":"SKIP","notes":"Urban tile heavily obscured by cloud cover; useful structures are only partially visible.","source":"test_images","ambiguous":false}
+{"id":"sentinel_sahara","image_path":"test_images/sentinel_sahara.png","expected_priority":"LOW","notes":"Featureful desert terrain but no obvious activity, infrastructure urgency, or anomaly worth thumbnail-first review.","source":"test_images","ambiguous":false}
+{"id":"sentinel_test1","image_path":"test_images/sentinel_test1.png","expected_priority":"MEDIUM","notes":"Coastal urban area with visible roads and dense settlement; routine but informative scene.","source":"test_images","ambiguous":false}
