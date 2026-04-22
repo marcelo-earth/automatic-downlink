@@ -7,6 +7,8 @@ import logging
 import uuid
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from src.triage.model import TriageModel
 from src.triage.prompts import PROMPT_PROFILES, TRIAGE_USER_PROMPT
 from src.triage.schemas import (
@@ -40,6 +42,53 @@ class TriageEngine:
     def system_prompt(self) -> str:
         return PROMPT_PROFILES.get(self.profile, PROMPT_PROFILES["default"])
 
+    def _prefilter(self, image: Image.Image) -> dict | None:
+        """Fast pixel-level check for cloud cover, darkness, or featureless terrain.
+
+        Returns a triage dict if the image can be classified without the VLM,
+        or None if the VLM should handle it.
+        """
+        arr = np.array(image.resize((128, 128)).convert("RGB"), dtype=np.float32)
+        mean_rgb = arr.mean(axis=(0, 1))
+        brightness = mean_rgb.mean()
+        std_rgb = arr.std()
+        white_frac = ((arr > 220).all(axis=2)).mean()
+        dark_frac = ((arr < 30).all(axis=2)).mean()
+
+        # Heavy cloud cover: mostly white/bright pixels
+        if white_frac > 0.6 or (brightness > 200 and std_rgb < 30):
+            logger.info("Pre-filter: cloud cover (white=%.0f%%, bright=%.0f)", white_frac * 100, brightness)
+            return {
+                "description": "Image dominated by cloud cover — no ground features visible.",
+                "priority": "SKIP",
+                "reasoning": "Heavy cloud cover detected by pixel analysis — VLM skipped to save compute.",
+                "categories": ["cloud_cover"],
+            }
+
+        # Very dark / night image
+        if dark_frac > 0.7 or brightness < 25:
+            logger.info("Pre-filter: dark image (dark=%.0f%%, bright=%.0f)", dark_frac * 100, brightness)
+            return {
+                "description": "Image is too dark to extract useful information.",
+                "priority": "SKIP",
+                "reasoning": "Dark/underexposed image detected by pixel analysis — VLM skipped.",
+                "categories": [],
+            }
+
+        # Featureless terrain: low contrast, mid-brightness (desert, ocean, ice)
+        if std_rgb < 18 and 40 < brightness < 190:
+            channel_range = arr.max() - arr.min()
+            if channel_range < 80:
+                logger.info("Pre-filter: featureless (std=%.1f, bright=%.0f)", std_rgb, brightness)
+                return {
+                    "description": "Featureless terrain with minimal visual variation.",
+                    "priority": "LOW",
+                    "reasoning": "Low-contrast featureless scene detected by pixel analysis — minimal information value.",
+                    "categories": ["terrain"],
+                }
+
+        return None
+
     def analyze(
         self,
         image: Image.Image,
@@ -62,13 +111,17 @@ class TriageEngine:
         """
         image_id = image_id or f"IMG_{uuid.uuid4().hex[:8].upper()}"
 
-        raw_output = self.model.generate(
-            image=image,
-            system_prompt=self.system_prompt,
-            user_prompt=TRIAGE_USER_PROMPT,
-        )
-
-        parsed = self._parse_model_output(raw_output)
+        # Fast pixel check — skip VLM for obvious cloud/dark/empty scenes
+        prefilter_result = self._prefilter(image)
+        if prefilter_result is not None:
+            parsed = prefilter_result
+        else:
+            raw_output = self.model.generate(
+                image=image,
+                system_prompt=self.system_prompt,
+                user_prompt=TRIAGE_USER_PROMPT,
+            )
+            parsed = self._parse_model_output(raw_output)
 
         priority = Priority(parsed.get("priority", "MEDIUM"))
         decision = TriageDecision(
@@ -120,8 +173,8 @@ class TriageEngine:
         logger.warning("Failed to parse model output as JSON: %s", cleaned[:200])
         return {
             "description": cleaned[:200] if cleaned else "Model output could not be parsed.",
-            "priority": "MEDIUM",
-            "reasoning": "Defaulting to MEDIUM — model output was not valid JSON.",
+            "priority": "LOW",
+            "reasoning": "Model output was not valid JSON — treating as low-value to conserve bandwidth.",
             "categories": [],
         }
 
