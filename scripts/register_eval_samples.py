@@ -84,6 +84,17 @@ def validate_row(row: dict[str, Any]) -> dict[str, Any]:
         "expected_priority": priority,
         "notes": str(row["notes"]).strip(),
     }
+    companion_views = row.get("companion_views")
+    if companion_views is not None:
+        if not isinstance(companion_views, dict):
+            raise ValueError("companion_views must be an object mapping view names to image paths")
+        normalized_companions: dict[str, str] = {}
+        for view_name, companion_path in companion_views.items():
+            resolved = REPO_ROOT / str(companion_path)
+            if not resolved.exists():
+                raise FileNotFoundError(f"Companion image path does not exist: {resolved}")
+            normalized_companions[str(view_name)] = Path(str(companion_path)).as_posix()
+        normalized["companion_views"] = normalized_companions
     if row.get("id"):
         normalized["id"] = str(row["id"]).strip()
     if row.get("source"):

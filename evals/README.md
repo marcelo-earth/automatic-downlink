@@ -18,6 +18,7 @@ Optional fields:
 - `id`: stable identifier for the sample
 - `source`: where the image came from (`test_images`, `simsat`, etc.)
 - `ambiguous`: `true` when the label is debatable and should be treated with caution
+- `companion_views`: object mapping names like `rgb` or `swir` to additional image paths
 
 ## Current sets
 
@@ -25,6 +26,10 @@ Optional fields:
   Initial bootstrap set using the checked-in local test images. This is not a
   complete benchmark; it is a seed set for validating the cascade locally and
   making the evaluation workflow reproducible.
+
+- `hazard_high_seed_v1.jsonl`
+  First reviewed hazard-focused seed slice using targeted historical SimSat
+  captures with paired `rgb` and `swir` views.
 
 ## Growing the benchmark
 
@@ -40,6 +45,7 @@ Useful scripts:
 - `scripts/capture_eval_candidates.py`
   Stages unlabeled Sentinel candidate images from a local SimSat instance into
   `evals/candidates/`.
+  It now supports multi-view capture presets such as `rgb-swir`.
 
 - `scripts/register_eval_samples.py`
   Validates reviewed rows and appends them into an evaluation manifest.
@@ -63,6 +69,10 @@ Examples:
 ```bash
 .venv/bin/python scripts/capture_eval_candidates.py --dry-run
 .venv/bin/python scripts/capture_eval_candidates.py --limit 5
+.venv/bin/python scripts/capture_eval_candidates.py \
+  --locations-file evals/locations/hazard_high_seed_locations.jsonl \
+  --view-preset rgb-swir \
+  --limit 6
 
 .venv/bin/python scripts/register_eval_samples.py \
   --manifest evals/sentinel_eval_v1.jsonl \
