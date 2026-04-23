@@ -47,9 +47,9 @@ Return this schema and nothing else:
 Priority guide:
 - SKIP: heavy clouds, no-data wedges, empty/obscured image
 - LOW: routine barren terrain, vegetation, or other low-information scene
-- MEDIUM: routine but informative urban, coastal, or agricultural scene
-- HIGH: unusual activity, deforestation, suspicious change, or important anomaly
-- CRITICAL: active disaster such as wildfire, flood, or severe damage
+- MEDIUM: informative or unusual scene, but no confirmed hazard
+- HIGH: visible hazard aftermath, probable hazard, or elevated hazard risk
+- CRITICAL: active hazard such as wildfire, flood, landslide, or a clear large spill
 """
 SIMPLE_USER_PROMPT = "Triage this satellite image. Respond with JSON only using description and priority."
 GENERATION_PRESETS = {

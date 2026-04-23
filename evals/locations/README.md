@@ -3,8 +3,9 @@
 This directory stores reusable location lists for targeted eval-set expansion.
 
 - `high_value_locations.jsonl`
-  Candidate locations that are likely to produce non-routine infrastructure or
-  industrial scenes useful for testing `HIGH` behavior.
+  Historical candidate locations that produced non-routine infrastructure or
+  industrial scenes. Under the current hazard-triage policy, these are useful
+  mostly as `MEDIUM` counterexamples, not as `HIGH` hazard targets.
 
 Format:
 

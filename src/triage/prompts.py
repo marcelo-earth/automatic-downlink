@@ -3,7 +3,7 @@
 TRIAGE_SYSTEM_PROMPT = """\
 You are a satellite image triage system. Analyze the image and respond ONLY with a JSON object. No other text.
 
-Priority: CRITICAL (disasters, fires, floods), HIGH (deforestation, unusual activity, anomalies), MEDIUM (routine urban, agriculture), LOW (featureless desert, barren terrain), SKIP (heavy clouds >80%, empty ocean, image artifacts).
+Priority: CRITICAL (active hazard clearly visible), HIGH (visible hazard aftermath, probable hazard, or elevated hazard risk), MEDIUM (informative or anomalous but no confirmed hazard), LOW (routine low-value terrain or vegetation), SKIP (heavy clouds, no-data wedges, empty/obscured image, image artifacts).
 
 If the image is mostly white/bright with no ground features visible, it is cloud-covered — mark SKIP.
 
@@ -12,7 +12,7 @@ Examples:
 {"description": "Image almost entirely covered by clouds, no ground features visible", "priority": "SKIP", "reasoning": "Cloud cover exceeds 80%, no usable data", "categories": ["cloud_cover"]}
 {"description": "Arid desert terrain with sand dunes and dry riverbeds", "priority": "LOW", "reasoning": "Featureless barren landscape with no activity", "categories": ["terrain", "desert"]}
 {"description": "Active wildfire with visible smoke plumes spreading over forested area", "priority": "CRITICAL", "reasoning": "Active fire threatening forested region, immediate alert needed", "categories": ["disaster", "fire", "vegetation"]}
-{"description": "Fresh clearing in dense forest with exposed soil and new access road", "priority": "HIGH", "reasoning": "Possible deforestation activity with new road construction", "categories": ["deforestation", "vegetation", "environmental_change"]}\
+{"description": "Dark burn scar spreading across previously vegetated terrain after a recent wildfire", "priority": "HIGH", "reasoning": "Visible wildfire aftermath remains operationally relevant even without active flames", "categories": ["fire_aftermath", "vegetation", "hazard"]}\
 """
 
 TRIAGE_USER_PROMPT = "Triage this satellite image. Respond with JSON only."
@@ -34,9 +34,9 @@ You must respond with valid JSON only. No extra text before or after the JSON.
 }
 
 In disaster mode, lower the threshold for CRITICAL and HIGH:
-- CRITICAL: Any sign of active damage, flooding, fire, or structural collapse.
-- HIGH: Areas that could be affected — nearby regions, evacuation routes, shelters.
-- MEDIUM: Areas that appear unaffected but are in the disaster zone.
+- CRITICAL: Any clear sign of active fire, flooding, landslide, or severe damage.
+- HIGH: Visible aftermath, residual flooding, burn scars, fresh slope failures, or strong hazard-linked risk.
+- MEDIUM: Areas that appear informative or unusual but do not show a confirmed hazard.
 - LOW: Areas clearly outside the affected region.
 - SKIP: Heavy cloud cover or open ocean.
 
@@ -44,8 +44,8 @@ Respond with JSON only.\
 """
 
 MARITIME_MODE_SYSTEM_PROMPT = """\
-You are an on-board satellite image analyst in MARITIME SURVEILLANCE MODE. Your satellite \
-monitors ocean areas for vessel activity, illegal fishing, oil spills, and maritime anomalies.
+You are an on-board satellite image analyst in MARITIME HAZARD MODE. Your satellite \
+monitors ocean and coastal areas for spills, contamination, and other maritime hazard signals.
 
 You must respond with valid JSON only. No extra text before or after the JSON.
 
@@ -57,9 +57,9 @@ You must respond with valid JSON only. No extra text before or after the JSON.
 }
 
 Maritime priorities:
-- CRITICAL: Oil spills, vessels in distress, large unauthorized vessel concentrations.
-- HIGH: Unusual vessel patterns, potential illegal fishing, unidentified large vessels.
-- MEDIUM: Normal shipping traffic, port activity.
+- CRITICAL: Clear large oil spill, vessel in visible distress, or obvious coastal hazard.
+- HIGH: Coastal contamination, ambiguous slick under favorable conditions, or visible maritime hazard aftermath.
+- MEDIUM: Normal shipping traffic, port activity, or maritime infrastructure without a confirmed hazard.
 - LOW: Empty ocean with minor features.
 - SKIP: Heavy cloud cover, no ocean visible.
 

@@ -2,6 +2,16 @@
 
 Date: `2026-04-22`
 
+## Historical Note
+
+As of the hazard-policy update on `2026-04-22`, `HIGH` is reserved for hazard scenes
+only. The four port / mine samples added in the earlier targeted `HIGH` slice were
+useful diagnostics, but they are now treated as `MEDIUM` counterexamples rather than
+valid `HIGH` targets.
+
+Sections that discuss ports/mines as `HIGH` should therefore be read as **historical
+pre-policy results**, not as the current benchmark definition.
+
 ## What Changed
 
 - Added a first reviewed SimSat batch at
@@ -10,6 +20,8 @@ Date: `2026-04-22`
   [`evals/review_batches/2026-04-12_historical_demo_reviewed.jsonl`](../review_batches/2026-04-12_historical_demo_reviewed.jsonl)
 - Expanded [`evals/sentinel_eval_v1.jsonl`](../sentinel_eval_v1.jsonl) from 4
   seed samples to 24 reviewed samples
+- Added a policy relabel batch at
+  [`evals/review_batches/2026-04-22_policy_relabel_nonhazard_high_to_medium.jsonl`](../review_batches/2026-04-22_policy_relabel_nonhazard_high_to_medium.jsonl)
 - Added retry handling to
   [`scripts/capture_eval_candidates.py`](/Users/marcelo/Documents/GitHub/automatic-downlink/scripts/capture_eval_candidates.py:1)
 - Extended
@@ -34,7 +46,7 @@ Date: `2026-04-22`
   - `4` checked-in seed images from `test_images/`
   - `20` reviewed SimSat Sentinel captures
 
-After targeted `HIGH` expansion:
+Historical pre-policy `HIGH` expansion:
 
 - Total samples: `28`
 - Expected priorities:
@@ -42,6 +54,15 @@ After targeted `HIGH` expansion:
   - `LOW`: `8`
   - `MEDIUM`: `4`
   - `HIGH`: `4`
+
+Current manifest after hazard-policy relabel:
+
+- Total samples: `28`
+- Expected priorities:
+  - `SKIP`: `12`
+  - `LOW`: `8`
+  - `MEDIUM`: `8`
+- Current valid `HIGH` hazard slice: pending rebuild
 
 ## Results
 

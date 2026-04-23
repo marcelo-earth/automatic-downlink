@@ -2,12 +2,12 @@
 
 ## Goal
 
-Build a **credible onboard downlink triage system** for satellite imagery, not just a model that emits plausible JSON.
+Build a **credible onboard hazard-triage system** for satellite imagery, not just a model that emits plausible JSON.
 
 This is the parent experiment.
 
 - `EXP_6`: real-domain benchmark, cascade design, prefilter tuning, and non-training improvements
-- `EXP_6_HIGH`: targeted continuation focused on recovering `HIGH` recall on real-domain industrial / infrastructure scenes
+- `EXP_6_HIGH`: targeted continuation focused on recovering hazard `HIGH` recall on real-domain wildfire / flood / landslide / spill scenes
 
 The target system should:
 
@@ -24,7 +24,7 @@ The problem is **not** "how do we caption satellite images?"
 
 The problem is:
 
-> Given limited downlink bandwidth, how do we decide which captured images deserve full transmission, thumbnail transmission, or summary-only transmission?
+> Given limited downlink bandwidth, how do we decide which captured images deserve full transmission because they show a hazard, likely hazard, or visible hazard aftermath?
 
 This matters because several previous experiments optimized for proxies:
 
@@ -35,7 +35,7 @@ This matters because several previous experiments optimized for proxies:
 
 Those are useful subproblems, but they are not the core objective.
 
-The real objective is **triage quality on deployment-domain imagery**.
+The real objective is **hazard-triage quality on deployment-domain imagery**.
 
 ---
 
@@ -240,6 +240,10 @@ Deliverable:
 
 - one short policy file with examples
 
+Current source of truth:
+
+- [`PRIORITY_POLICY.md`](PRIORITY_POLICY.md)
+
 Success criterion:
 
 - priorities correspond to downlink actions, not just semantic labels
@@ -288,7 +292,12 @@ The set should include:
 - forest / vegetation
 - water / maritime
 - barren terrain
-- at least a few genuinely high-value or unusual scenes if available
+- hazard positives across the current scope when available:
+  - wildfire
+  - flood
+  - landslide
+  - oil spill under favorable conditions
+- non-hazard counterexamples that might look "important" but should still be `MEDIUM`
 
 Deliverable:
 
@@ -296,7 +305,7 @@ Deliverable:
 
 Success criterion:
 
-- the team can manually inspect and agree the labels are defensible
+- the team can manually inspect and agree the labels are defensible under the hazard policy
 
 ### Step 3: Reduce the schema for training
 
@@ -364,6 +373,11 @@ Label source options:
 - mixed manual + teacher labeling
 
 This set should become the main source of supervision for `priority`.
+
+If Sentinel-2 companion views help, the real-domain set may include:
+
+- RGB view
+- SWIR or NIR companion view of the same tile
 
 Success criterion:
 
@@ -478,6 +492,7 @@ These are the things I am confident about:
 3. **`description + priority` is a better first schema than the full 4-field JSON.**
 4. **Caption-derived priority labels are too weak to remain the primary supervision source.**
 5. **The demo should frame the system as a hybrid pipeline, not a single all-powerful VLM.**
+6. **RGB + companion SWIR/NIR views are worth testing for hazard discrimination.**
 
 ---
 

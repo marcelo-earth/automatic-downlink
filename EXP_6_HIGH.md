@@ -2,83 +2,86 @@
 
 ## Goal
 
-Recover `HIGH` recall on real-domain imagery without losing the gains already achieved in `SKIP`, `LOW`, and `MEDIUM`.
+Recover hazard-oriented `HIGH` recall on real-domain imagery without losing the gains
+already achieved in `SKIP`, `LOW`, and `MEDIUM`.
 
 This is a continuation of [`EXP_6.md`](/Users/marcelo/Documents/GitHub/automatic-downlink/EXP_6.md:1), not a separate experiment family.
 
-The question is no longer:
+The question is now:
 
-> Can we build a real-domain benchmark and improve the cascade?
+> Can the current system learn to recognize visible hazard aftermath, probable hazard,
+> and elevated hazard risk as `HIGH`, instead of flattening everything into
+> `MEDIUM`?
 
-That has already been answered.
+---
 
-The new question is:
+## Policy Update
 
-> Can the current system learn to recognize strategically important industrial / infrastructure scenes as `HIGH`, instead of flattening them to `MEDIUM` or `LOW`?
+The product is now explicitly **hazard triage**.
+
+That means:
+
+- `CRITICAL` = active hazard clearly visible now
+- `HIGH` = visible hazard aftermath, probable hazard, or strong hazard-linked risk
+- `MEDIUM` = informative or anomalous scene without confirmed hazard
+
+Important consequence:
+
+- ports, mines, airports, cities, and industrial sites are **not** `HIGH` by default
+- they are `MEDIUM` unless the image shows a hazard-related reason to escalate them
+
+The source of truth is [`PRIORITY_POLICY.md`](PRIORITY_POLICY.md).
 
 ---
 
 ## Current Evidence
 
-After the targeted `HIGH` benchmark expansion, the system now has:
+The earlier targeted `HIGH` slice used ports and mines as stand-ins for "important"
+scenes. Under the current hazard policy, that slice is no longer a valid `HIGH`
+benchmark.
 
-- `28` reviewed eval samples
-- expected distribution:
-  - `SKIP`: `12`
-  - `LOW`: `8`
-  - `MEDIUM`: `4`
-  - `HIGH`: `4`
+Those scenes should now be treated as:
 
-The key result is:
+- useful counterexamples
+- mostly `MEDIUM`
+- evidence that "strategic-looking" is not enough
 
-- `HIGH recall = 0/4`
-
-Specifically, the current model:
-
-- describes major ports reasonably, but predicts `MEDIUM`
-- describes large open-pit mines poorly or generically, sometimes predicting `LOW`
-
-This matters because it changes the diagnosis:
-
-- The main `LOW` / `MEDIUM` calibration problem can be improved by the cascade.
-- The `HIGH` problem is upstream of the decision layer.
-- The current VLM is not reliably mapping these scenes into the `HIGH` class.
-
-That means more post-processing alone is unlikely to solve `HIGH`.
+So the next version of `EXP_6_HIGH` needs a **new hazard-aligned `HIGH` slice**, not
+another infrastructure slice.
 
 ---
 
 ## What This Experiment Is
 
-`EXP_6_HIGH` is a **targeted real-domain supervision experiment**.
+`EXP_6_HIGH` is a **targeted real-domain hazard supervision experiment**.
 
 It is not:
 
-- a resurrection of `EXP_5`
-- another broad caption-cleaning pass
-- a generic “let’s retrain everything and hope” run
+- a return to caption-derived labels as the main source of truth
+- another generic infrastructure classifier
+- an attempt to patch `HIGH` with upward heuristics
 
 It is:
 
-- a narrow attempt to teach the current model what `HIGH` should mean in this product
-- using the real benchmark from `EXP_6` as the guardrail
+- a narrow attempt to teach the current model what hazard `HIGH` means in this
+  product
+- measured against a frozen real-domain benchmark
 
 ---
 
 ## Core Hypothesis
 
-The current model already has enough visual competence to recognize:
-
-- ports
-- ships
-- industrial facilities
-- open-pit mines
-
-But it does **not** have a strong enough supervisory mapping from those visual patterns to the `HIGH` class in this product.
+The current model can often describe satellite scenes in broadly plausible language,
+but it does not yet map hazard-related visual evidence into the right priority policy.
 
 So the hypothesis is:
 
-> A small targeted fine-tune with real-domain `HIGH` examples and matched policy labels will improve `HIGH` recall more effectively than further prompt tweaking or post-processing.
+> A small targeted fine-tune with real-domain hazard `HIGH` examples, matched to the
+> current policy, will improve `HIGH` recall more effectively than further prompt
+> tweaking or post-processing.
+
+This is especially likely if the fine-tune uses richer Sentinel-2 views than RGB alone,
+for example RGB + SWIR on the same tile.
 
 ---
 
@@ -90,16 +93,16 @@ That means:
 
 - do not break `SKIP` handling
 - do not regress `LOW` / `MEDIUM` calibration badly
-- do not remove the prefilter or conservative decision layer
+- do not remove the prefilter or conservative `MEDIUM -> LOW` decision layer
 - evaluate on the existing benchmark before claiming success
 
-Success is not “the model says HIGH more often.”
+Success is not "the model says `HIGH` more often."
 
 Success is:
 
-- `HIGH` recall increases
-- overall benchmark quality remains acceptable
-- the system is still demo-defensible
+- hazard `HIGH` recall increases on reviewed examples
+- overall benchmark quality remains defensible
+- the system still behaves conservatively outside the hazard slice
 
 ---
 
@@ -107,12 +110,12 @@ Success is:
 
 Focus `HIGH` on the current product definition:
 
-- large industrial infrastructure
-- major ports / maritime logistics hubs
-- major mines / extraction sites
-- concentrated strategic activity that is clearly more valuable than routine terrain
+- wildfire aftermath with clear burn scars or nearby risk context
+- receding flood or obvious residual inundation effects
+- landslide scars / unstable slopes with strong visual evidence
+- oil spill or coastal contamination only under favorable conditions
 
-Do **not** broaden `HIGH` yet to include everything that might be important.
+Do **not** broaden `HIGH` yet to include everything that looks strategically important.
 
 Keep the semantics narrow enough to train and measure.
 
@@ -120,43 +123,57 @@ Keep the semantics narrow enough to train and measure.
 
 ## Dataset Strategy
 
-### 1. Keep the current eval set frozen
+### 1. Keep the current eval set frozen, but relabel policy mismatches
 
-Use the current `28`-sample benchmark as the primary regression guardrail.
+The existing reviewed manifest remains the regression guardrail for:
 
-Do not relabel it casually during training.
+- `SKIP`
+- `LOW`
+- `MEDIUM`
 
-### 2. Build a small targeted training set for `HIGH`
+Any scenes that were previously labeled `HIGH` for "strategic importance" should be
+downgraded to `MEDIUM` or removed from the `HIGH` slice.
+
+### 2. Build a new hazard `HIGH` set
 
 Collect a compact real-domain set with emphasis on:
 
-- ports
-- shipping terminals
-- airports if clearly visible and infrastructure-dense
-- large mines / extraction facilities
-- other major industrial zones only if they are visually unambiguous
+- wildfire aftermath
+- flood aftermath
+- landslide aftermath or unstable slopes
+- oil spill / coastal contamination under favorable conditions
 
 Target scale:
 
 - `20-60` reviewed `HIGH` examples
-- plus a matched set of nearby `MEDIUM` or `LOW` counterexamples
+- plus matched `MEDIUM` counterexamples
 
 The counterexamples matter because the problem is discriminative:
 
-- not “what does a port look like?”
-- but “what deserves `HIGH` instead of `MEDIUM`?”
+- not "what does a port or coastline look like?"
+- but "what deserves `HIGH` instead of `MEDIUM` under hazard policy?"
 
-### 3. Avoid proxy labels as the main source
+### 3. Include hard negatives
 
-Do not return to caption-derived priorities as the core label source.
+Counterexamples should include scenes that are visually salient but non-hazard:
 
-Allowed:
+- ports
+- mines
+- airports
+- dense cities
+- coastlines with no clear spill
+- dark water without a defensible slick signal
 
-- use captions or teacher models to speed up draft annotation
+### 4. Prefer RGB + companion views when useful
 
-Not allowed:
+If the capture pipeline allows it, collect paired inputs such as:
 
-- trust those draft labels without review for the key `HIGH` set
+- RGB composite
+- SWIR composite
+- optionally NIR-derived view
+
+This follows the pattern already used in the wildfire cookbook and does not require a
+new architecture.
 
 ---
 
@@ -164,25 +181,25 @@ Not allowed:
 
 Each training example should include:
 
-- image
+- image or image pair
 - `description`
 - `priority`
 - short note on why that priority is correct
 
-For `HIGH`, the note should express product semantics, not abstract image semantics.
+For `HIGH`, the note should express hazard semantics, not generic scene importance.
 
-Examples:
+Good examples:
 
-- “Major container port with dense logistics infrastructure; high-value strategic scene”
-- “Large open-pit mine and processing area; industrial monitoring target”
+- "Clear burn scar and smoke-adjacent wildfire aftermath; hazard remains operationally relevant"
+- "Floodwater has receded but saturated terrain and expanded water extent remain clearly visible"
+- "Fresh landslide scar on vegetated slope with visible debris fan"
+- "Dark coastal slick under favorable conditions with plausible contamination pattern"
 
-Avoid labels like:
+Bad examples:
 
-- “interesting image”
-- “complex scene”
-- “many objects”
-
-Those are not operational definitions.
+- "important infrastructure"
+- "strategically valuable scene"
+- "many objects visible"
 
 ---
 
@@ -194,22 +211,30 @@ Preferred first move.
 
 Train the current model on:
 
-- a small real-domain `HIGH`-focused set
-- the existing schema used at inference
+- a small real-domain hazard `HIGH` set
+- policy-aligned counterexamples
+- the same output schema used at inference
 
-Possible recipe:
+### Option B: RGB + SWIR hazard pass
 
-- keep the model base the same
-- keep prompt format aligned with inference
-- bias the small dataset toward the new `HIGH` distinction
-- avoid trying to relearn everything
+If RGB-only continues to blur hazard classes, the next pass should try:
 
-### Option B: Mixed refresh set
+- RGB input
+- SWIR companion image of the same tile
+
+This is especially attractive for:
+
+- wildfire
+- flood
+- hazard aftermath discrimination
+
+### Option C: Mixed refresh set
 
 If pure `HIGH` tuning causes instability, mix:
 
 - targeted `HIGH` examples
-- a smaller number of `SKIP`, `LOW`, and `MEDIUM` anchor examples from the real benchmark domain
+- a smaller number of `SKIP`, `LOW`, and `MEDIUM` anchor examples from the same
+  deployment domain
 
 This helps prevent class drift.
 
@@ -219,62 +244,55 @@ This helps prevent class drift.
 
 Every training run must be evaluated on:
 
-1. the full current benchmark
-2. the `HIGH` subset alone
-3. distribution shift in predictions
+1. the frozen general benchmark
+2. the new hazard `HIGH` subset
+3. prediction distribution drift
 
 Track at minimum:
 
 - overall accuracy on the benchmark
-- `HIGH` recall
-- `HIGH` precision, if sample count allows
-- change in predicted distribution
+- hazard `HIGH` recall
+- hazard `HIGH` precision, if sample count allows
+- false escalation of non-hazard scenes
 - whether `SKIP` or `LOW` regress badly
 
 Key success criteria:
 
-- `HIGH recall` improves from `0/4` to something meaningfully non-zero
+- hazard `HIGH` recall becomes meaningfully non-zero
+- non-hazard infrastructure does not get promoted to `HIGH` without evidence
 - overall benchmark quality stays defensible
-- `SKIP` performance remains strong
 
 Practical first success bar:
 
-- at least `2/4` correct on current `HIGH` eval samples
+- at least `2-4` clearly correct hazard `HIGH` predictions on a reviewed subset
 - no major collapse elsewhere
 
 ---
 
 ## What Not To Do
 
-- Do not rely on prompt changes alone and call that the solution.
+- Do not reuse "important infrastructure" as a shortcut for `HIGH`.
 - Do not add aggressive upward post-processing heuristics.
+- Do not treat oil spill as a strong capability outside favorable conditions.
 - Do not expand `HIGH` semantics mid-experiment.
-- Do not discard the current benchmark if a training run performs poorly on it.
-- Do not judge success by eyeballing a few cherry-picked examples.
+- Do not judge success by cherry-picked examples.
 
 ---
 
 ## Open Questions
 
-- Are ports and mines truly the right first-class `HIGH` semantics for the product, or are they only good stand-ins for “strategic scenes”?
-- Should airports be included in the first targeted `HIGH` set, or are they too visually inconsistent in Sentinel tiles?
-- How many reviewed `HIGH` examples are needed before the current model can separate them from routine `MEDIUM` scenes?
-- Will a small targeted fine-tune be enough, or does the current model fundamentally need better domain adaptation?
+- How many reviewed hazard `HIGH` examples are needed before the model separates them from routine `MEDIUM` scenes?
+- Is RGB-only enough for the first hazard pass, or should RGB + SWIR be the default immediately?
+- Which hazard family gives the cleanest first win: wildfire, flood, landslide, or oil spill?
+- Should some "risk-only" scenes stay `HIGH`, or should they remain `MEDIUM` unless aftermath is visible?
+- How much manual review is needed before oil-spill labels become reliable enough to train on?
 
 ---
 
-## Recommended Next Step
+## Recommended Immediate Next Steps
 
-The next practical step is:
-
-1. curate `20-60` real-domain `HIGH` examples plus counterexamples
-2. package them into a small training set aligned to the current inference schema
-3. run a targeted fine-tune
-4. evaluate against the frozen `EXP_6` benchmark
-
-This keeps the work inside the `EXP_6` logic:
-
-- real benchmark first
-- measurable hypothesis
-- targeted intervention
-- regression check before claiming progress
+1. Freeze the current non-hazard benchmark after relabeling old policy mismatches.
+2. Build a new reviewed hazard `HIGH` slice.
+3. Start with the cleanest hazard family first, likely wildfire or flood.
+4. Compare RGB-only against RGB + SWIR if capture/rendering is cheap enough.
+5. Fine-tune only after the hazard slice exists and the labels are reviewed.
