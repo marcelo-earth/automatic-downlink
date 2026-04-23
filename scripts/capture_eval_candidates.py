@@ -46,6 +46,30 @@ DEMO_LOCATIONS = [
 ]
 
 
+def load_custom_locations(path: Path) -> list[tuple[str, str, float, float]]:
+    rows: list[tuple[str, str, float, float]] = []
+    with path.open(encoding="utf-8") as fh:
+        for line_no, line in enumerate(fh, start=1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            row = json.loads(stripped)
+            try:
+                rows.append(
+                    (
+                        str(row["location_slug"]),
+                        str(row["location_name"]),
+                        float(row["lat"]),
+                        float(row["lon"]),
+                    )
+                )
+            except KeyError as exc:
+                raise ValueError(f"{path}:{line_no} missing required field: {exc.args[0]}") from exc
+    if not rows:
+        raise ValueError(f"No locations found in {path}")
+    return rows
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Capture candidate Sentinel eval images from SimSat.")
     parser.add_argument(
@@ -105,6 +129,11 @@ def parse_args() -> argparse.Namespace:
         help="Print planned captures without calling SimSat or writing files.",
     )
     parser.add_argument(
+        "--locations-file",
+        type=Path,
+        help="JSONL file with custom historical-demo locations to capture instead of the built-in demo list.",
+    )
+    parser.add_argument(
         "--retries",
         type=int,
         default=2,
@@ -156,9 +185,24 @@ def build_candidate_row(
 
 def append_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as fh:
-        for row in rows:
-            fh.write(json.dumps(row) + "\n")
+    existing: list[dict[str, Any]] = []
+    if path.exists():
+        with path.open(encoding="utf-8") as fh:
+            existing = [json.loads(line) for line in fh if line.strip()]
+
+    merged: dict[str, dict[str, Any]] = {}
+    ordered_ids: list[str] = []
+    for row in existing + rows:
+        candidate_id = str(row.get("candidate_id", ""))
+        if not candidate_id:
+            continue
+        if candidate_id not in merged:
+            ordered_ids.append(candidate_id)
+        merged[candidate_id] = row
+
+    with path.open("w", encoding="utf-8") as fh:
+        for candidate_id in ordered_ids:
+            fh.write(json.dumps(merged[candidate_id]) + "\n")
 
 
 def fetch_with_retry(
@@ -186,8 +230,11 @@ def capture_historical_demo(args: argparse.Namespace, client: SimSatClient) -> l
     output_dir = args.output_dir.resolve()
     if not args.dry_run:
         output_dir.mkdir(parents=True, exist_ok=True)
+    locations = DEMO_LOCATIONS
+    if args.locations_file is not None:
+        locations = load_custom_locations(args.locations_file.resolve())
 
-    for location_slug, location_name, lat, lon in DEMO_LOCATIONS[: args.limit]:
+    for location_slug, location_name, lat, lon in locations[: args.limit]:
         candidate_id = f"{location_slug}_{fetch_timestamp.replace(':', '').replace('-', '')}"
         output_path = output_dir / f"{candidate_id}.png"
 

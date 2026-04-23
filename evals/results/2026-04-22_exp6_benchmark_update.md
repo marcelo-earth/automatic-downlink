@@ -34,6 +34,15 @@ Date: `2026-04-22`
   - `4` checked-in seed images from `test_images/`
   - `20` reviewed SimSat Sentinel captures
 
+After targeted `HIGH` expansion:
+
+- Total samples: `28`
+- Expected priorities:
+  - `SKIP`: `12`
+  - `LOW`: `8`
+  - `MEDIUM`: `4`
+  - `HIGH`: `4`
+
 ## Results
 
 ### A. Shipped Cascade on 14 Samples
@@ -149,6 +158,54 @@ Interpretation:
   terrain/vegetation scenes.
 - The layer did not change `SKIP`, `HIGH`, or `CRITICAL` behavior.
 
+### F. Targeted `HIGH` Expansion on 28 Samples (`seed=42`)
+
+Added reviewed `HIGH` scenes:
+
+- `long_beach_port_20260412T120000Z`
+- `jebel_ali_port_20260412T120000Z`
+- `chuquicamata_mine_20260412T120000Z`
+- `escondida_mine_20260412T120000Z`
+
+Command:
+
+```bash
+.venv/bin/python scripts/evaluate_current_cascade.py \
+  --offline \
+  --seed 42 \
+  --output-dir /tmp/automatic-downlink-eval-28-with-high
+```
+
+- Samples: `28`
+- Priority match: `20/28` = `71.4%`
+- Predicted distribution: `SKIP 13`, `MEDIUM 10`, `LOW 5`
+- `HIGH` recall on benchmark: `0/4`
+
+Interpretation:
+- The cascade still works reasonably in the `SKIP/LOW/MEDIUM` regime.
+- The current model does not elevate any of the targeted `HIGH` scenes to
+  `HIGH`.
+- Ports are flattened to `MEDIUM`.
+- One mine is flattened all the way to `LOW`.
+
+Control check with decision layer disabled:
+
+```bash
+.venv/bin/python scripts/evaluate_current_cascade.py \
+  --offline \
+  --seed 42 \
+  --disable-decision-layer \
+  --output-dir /tmp/automatic-downlink-eval-28-no-decision-layer
+```
+
+- Priority match: `18/28` = `64.3%`
+- `HIGH` recall on benchmark: `0/4`
+
+Interpretation:
+- The conservative decision layer is not the reason `HIGH` scenes are missed.
+- The failure is upstream: the current VLM does not yet map these scenes into
+  the `HIGH` class.
+
 ## Current Conclusion
 
 The benchmark now supports a stronger statement than before:
@@ -160,6 +217,8 @@ The benchmark now supports a stronger statement than before:
   calibration without touching model weights.
 - The current model is not reliably calibrated on non-trivial real-domain
   `LOW` / `MEDIUM` decisions.
+- The current model also fails completely on the first targeted `HIGH`
+  benchmark slice (`0/4` recall).
 - Prompt simplification and deterministic decoding alone do not fix the issue.
 - Small, benchmark-driven cascade improvements can move the total score
   materially without any retraining.
@@ -169,7 +228,8 @@ targeted next experiment stronger. The next likely useful comparison is:
 
 1. shipped weights + shipped prompt
 2. shipped weights + current decision layer on a benchmark with `HIGH` examples
-3. updated or re-labeled fine-tune on a small real-domain set
+3. targeted real-domain supervision for `HIGH` scenes
+4. updated or re-labeled fine-tune on a small real-domain set
 
 ## Open Questions
 
@@ -183,5 +243,7 @@ targeted next experiment stronger. The next likely useful comparison is:
   calibration without retraining?
 - Does the decision layer still help once the benchmark includes `HIGH`
   examples, or does it only improve the low-value regime?
+- Are ports/mines the right semantics for `HIGH` in the product, or should
+  `HIGH` stay reserved for anomaly/change detection only?
 - Is the right next step a small real-domain fine-tune, or simply a better
   decision layer on top of the current descriptions?

@@ -55,6 +55,9 @@ Related directories:
 - `evals/results/`
   Human-readable notes on benchmark growth and evaluation outcomes.
 
+- `evals/locations/`
+  Reusable targeted location lists for capturing specific scene types.
+
 Examples:
 
 ```bash
