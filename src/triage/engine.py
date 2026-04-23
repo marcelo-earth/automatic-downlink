@@ -28,34 +28,98 @@ logger = logging.getLogger(__name__)
 IMAGE_SIZE_BYTES = 500 * 1024  # ~500KB per satellite image
 THUMBNAIL_SIZE_BYTES = 50 * 1024  # ~50KB compressed thumbnail
 SUMMARY_SIZE_BYTES = 1024  # ~1KB text summary
+LOW_VALUE_KEYWORDS = {
+    "arid",
+    "barren",
+    "canopy",
+    "cloud",
+    "cloudy",
+    "desert",
+    "dune",
+    "dry riverbed",
+    "erosion",
+    "foliage",
+    "forest",
+    "geological",
+    "geology",
+    "rainforest",
+    "ridge",
+    "sand",
+    "scrub",
+    "terrain",
+    "vegetation",
+}
+STRUCTURED_SCENE_KEYWORDS = {
+    "airport",
+    "building",
+    "city",
+    "coast",
+    "coastal",
+    "harbor",
+    "highway",
+    "industrial",
+    "infrastructure",
+    "neighborhood",
+    "port",
+    "rail",
+    "residential",
+    "road",
+    "settlement",
+    "shore",
+    "shoreline",
+    "urban",
+}
 
 
 class TriageEngine:
     """Analyzes satellite images and produces triage decisions."""
 
-    def __init__(self, model: TriageModel, profile: str = "default"):
+    def __init__(
+        self,
+        model: TriageModel,
+        profile: str = "default",
+        use_decision_layer: bool = True,
+    ):
         self.model = model
         self.profile = profile
+        self.use_decision_layer = use_decision_layer
         self.decisions: list[TriageDecision] = []
 
     @property
     def system_prompt(self) -> str:
         return PROMPT_PROFILES.get(self.profile, PROMPT_PROFILES["default"])
 
-    def _prefilter(self, image: Image.Image) -> dict | None:
+    def _image_signals(self, image: Image.Image) -> dict[str, float]:
+        """Compute cheap image signals used by the prefilter and decision layer."""
+        arr = np.array(image.resize((128, 128)).convert("RGB"), dtype=np.float32)
+        mean_rgb = arr.mean(axis=(0, 1))
+        green_frac = (
+            ((arr[:, :, 1] > arr[:, :, 0] + 8) & (arr[:, :, 1] > arr[:, :, 2] + 8)).mean()
+        )
+        return {
+            "brightness": float(mean_rgb.mean()),
+            "std_rgb": float(arr.std()),
+            "white_frac": float(((arr > 220).all(axis=2)).mean()),
+            "near_white_frac": float(((arr > 245).all(axis=2)).mean()),
+            "dark_frac": float(((arr < 30).all(axis=2)).mean()),
+            "near_black_frac": float(((arr < 8).all(axis=2)).mean()),
+            "low_sat_frac": float(((arr.max(axis=2) - arr.min(axis=2)) < 12).mean()),
+            "green_frac": float(green_frac),
+        }
+
+    def _prefilter(self, image: Image.Image, signals: dict[str, float] | None = None) -> dict | None:
         """Fast pixel-level check for cloud cover, darkness, or featureless terrain.
 
         Returns a triage dict if the image can be classified without the VLM,
         or None if the VLM should handle it.
         """
-        arr = np.array(image.resize((128, 128)).convert("RGB"), dtype=np.float32)
-        mean_rgb = arr.mean(axis=(0, 1))
-        brightness = mean_rgb.mean()
-        std_rgb = arr.std()
-        white_frac = ((arr > 220).all(axis=2)).mean()
-        near_white_frac = ((arr > 245).all(axis=2)).mean()
-        dark_frac = ((arr < 30).all(axis=2)).mean()
-        low_sat_frac = ((arr.max(axis=2) - arr.min(axis=2)) < 12).mean()
+        signals = signals or self._image_signals(image)
+        brightness = signals["brightness"]
+        std_rgb = signals["std_rgb"]
+        white_frac = signals["white_frac"]
+        near_white_frac = signals["near_white_frac"]
+        dark_frac = signals["dark_frac"]
+        low_sat_frac = signals["low_sat_frac"]
 
         # Heavy cloud cover: mostly white/bright pixels
         if white_frac > 0.6 or (brightness > 200 and std_rgb < 30):
@@ -109,8 +173,7 @@ class TriageEngine:
 
         # Featureless terrain: low contrast, mid-brightness (desert, ocean, ice)
         if std_rgb < 18 and 40 < brightness < 190:
-            channel_range = arr.max() - arr.min()
-            if channel_range < 80:
+            if low_sat_frac > 0.75:
                 logger.info("Pre-filter: featureless (std=%.1f, bright=%.0f)", std_rgb, brightness)
                 return {
                     "description": "Featureless terrain with minimal visual variation.",
@@ -120,6 +183,64 @@ class TriageEngine:
                 }
 
         return None
+
+    def _apply_decision_layer(
+        self,
+        parsed: dict,
+        signals: dict[str, float],
+    ) -> tuple[Priority, str | None]:
+        """Conservative post-VLM correction layer.
+
+        This layer only downgrades MEDIUM -> LOW for scenes that look routine
+        and low-information according to both the generated description and
+        cheap pixel statistics.
+        """
+        base_priority = Priority(parsed.get("priority", "MEDIUM"))
+        if base_priority != Priority.MEDIUM:
+            return base_priority, None
+
+        description = str(parsed.get("description", "")).lower()
+        reasoning = str(parsed.get("reasoning", "")).lower()
+        categories = [str(c).lower() for c in parsed.get("categories", [])]
+        text_blob = " ".join([description, reasoning, " ".join(categories)])
+
+        if any(keyword in text_blob for keyword in STRUCTURED_SCENE_KEYWORDS):
+            return base_priority, None
+
+        brightness = signals["brightness"]
+        std_rgb = signals["std_rgb"]
+        white_frac = signals["white_frac"]
+        green_frac = signals["green_frac"]
+        low_sat_frac = signals["low_sat_frac"]
+
+        terrain_like = any(keyword in text_blob for keyword in LOW_VALUE_KEYWORDS)
+        bright_barren = (
+            terrain_like
+            and brightness > 145
+            and std_rgb < 70
+            and white_frac < 0.18
+        )
+        cloudy_vegetation = (
+            terrain_like
+            and green_frac > 0.18
+            and white_frac > 0.05
+            and low_sat_frac > 0.2
+            and brightness < 120
+        )
+
+        if bright_barren:
+            return (
+                Priority.LOW,
+                "Decision layer downgraded MEDIUM to LOW: barren terrain description plus bright low-information image signals.",
+            )
+
+        if cloudy_vegetation:
+            return (
+                Priority.LOW,
+                "Decision layer downgraded MEDIUM to LOW: routine vegetation/cloud scene with no structured activity.",
+            )
+
+        return base_priority, None
 
     def analyze(
         self,
@@ -142,11 +263,15 @@ class TriageEngine:
             TriageDecision with priority, description, and downlink action.
         """
         image_id = image_id or f"IMG_{uuid.uuid4().hex[:8].upper()}"
+        signals = self._image_signals(image)
 
         # Fast pixel check — skip VLM for obvious cloud/dark/empty scenes
-        prefilter_result = self._prefilter(image)
+        prefilter_result = self._prefilter(image, signals=signals)
+        override_reason = None
         if prefilter_result is not None:
             parsed = prefilter_result
+            base_priority = Priority(parsed.get("priority", "MEDIUM"))
+            final_priority = base_priority
         else:
             raw_output = self.model.generate(
                 image=image,
@@ -154,15 +279,23 @@ class TriageEngine:
                 user_prompt=TRIAGE_USER_PROMPT,
             )
             parsed = self._parse_model_output(raw_output)
+            base_priority = Priority(parsed.get("priority", "MEDIUM"))
+            if self.use_decision_layer:
+                final_priority, override_reason = self._apply_decision_layer(parsed, signals)
+            else:
+                final_priority = base_priority
 
-        priority = Priority(parsed.get("priority", "MEDIUM"))
+        priority = final_priority
         decision = TriageDecision(
             image_id=image_id,
             timestamp=timestamp,
             position=position,
             description=parsed.get("description", "Unable to analyze image."),
             priority=priority,
+            base_priority=base_priority,
+            final_priority=final_priority,
             reasoning=parsed.get("reasoning", "No reasoning provided."),
+            override_reason=override_reason,
             categories=parsed.get("categories", []),
             downlink_action=PRIORITY_TO_ACTION[priority],
             source=source,

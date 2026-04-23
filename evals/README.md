@@ -70,4 +70,6 @@ Examples:
   --source test_images
 
 .venv/bin/python scripts/evaluate_current_cascade.py --offline
+.venv/bin/python scripts/evaluate_current_cascade.py --offline --seed 42 --disable-decision-layer
+.venv/bin/python scripts/evaluate_current_cascade.py --offline --seed 42
 ```

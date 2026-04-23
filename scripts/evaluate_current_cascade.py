@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import sys
 import time
 from collections import Counter
@@ -23,6 +24,8 @@ from pathlib import Path
 from typing import Any
 
 from PIL import Image
+import numpy as np
+import torch
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -99,6 +102,14 @@ def configure_generation(preset: str) -> dict[str, Any]:
     generation_kwargs = dict(GENERATION_PRESETS[preset])
     triage_model_module.GENERATION_KWARGS = generation_kwargs
     return generation_kwargs
+
+
+def configure_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def configure_prompts(prompt_mode: str) -> tuple[str, str]:
@@ -186,6 +197,8 @@ def render_report(
     generation_preset: str,
     generation_kwargs: dict[str, Any],
     prompt_mode: str,
+    seed: int,
+    decision_layer_enabled: bool,
     summary: dict[str, Any],
     results: list[dict[str, Any]],
 ) -> str:
@@ -196,7 +209,9 @@ def render_report(
         f"**Model source:** {model_source}  ",
         f"**Processor source:** {processor_source}  ",
         f"**Generation preset:** {generation_preset} `{generation_kwargs}`  ",
-        f"**Prompt mode:** {prompt_mode}",
+        f"**Prompt mode:** {prompt_mode}  ",
+        f"**Seed:** {seed}  ",
+        f"**Decision layer:** {'enabled' if decision_layer_enabled else 'disabled'}",
         "",
         "## Summary",
         "",
@@ -267,6 +282,17 @@ def main() -> None:
         default="shipped",
         help="Prompt schema to use for evaluation.",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for reproducible generation.",
+    )
+    parser.add_argument(
+        "--disable-decision-layer",
+        action="store_true",
+        help="Bypass the post-VLM decision layer and use raw model priorities.",
+    )
     args = parser.parse_args()
 
     manifest_path = args.manifest.resolve()
@@ -274,13 +300,18 @@ def main() -> None:
 
     model_source = resolve_model_source(args.model_id, args.model_revision, args.offline)
     processor_source = resolve_model_source(args.processor_id, None, args.offline)
+    configure_seed(args.seed)
     generation_kwargs = configure_generation(args.generation_preset)
     configure_prompts(args.prompt_mode)
 
     triage_model_module.BASE_MODEL_ID = processor_source
     model = triage_model_module.TriageModel(model_id=model_source)
     model.load()
-    engine = TriageEngine(model=model, profile="default")
+    engine = TriageEngine(
+        model=model,
+        profile="default",
+        use_decision_layer=not args.disable_decision_layer,
+    )
 
     results = [evaluate_sample(engine, sample) for sample in samples]
     summary = build_summary(results)
@@ -299,6 +330,8 @@ def main() -> None:
         args.generation_preset,
         generation_kwargs,
         args.prompt_mode,
+        args.seed,
+        not args.disable_decision_layer,
         summary,
         results,
     )

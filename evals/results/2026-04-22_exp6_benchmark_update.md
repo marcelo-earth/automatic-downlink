@@ -14,10 +14,14 @@ Date: `2026-04-22`
   [`scripts/capture_eval_candidates.py`](/Users/marcelo/Documents/GitHub/automatic-downlink/scripts/capture_eval_candidates.py:1)
 - Extended
   [`scripts/evaluate_current_cascade.py`](/Users/marcelo/Documents/GitHub/automatic-downlink/scripts/evaluate_current_cascade.py:1)
-  to compare generation presets and prompt modes
+  to compare generation presets, prompt modes, fixed seeds, and decision-layer toggles
 - Added two bounded prefilter heuristics in
   [`src/triage/engine.py`](/Users/marcelo/Documents/GitHub/automatic-downlink/src/triage/engine.py:1)
   for mixed cloud-dominated frames and bright barren terrain
+- Added a conservative post-VLM decision layer in
+  [`src/triage/engine.py`](/Users/marcelo/Documents/GitHub/automatic-downlink/src/triage/engine.py:1)
+  plus trace fields in
+  [`src/triage/schemas.py`](/Users/marcelo/Documents/GitHub/automatic-downlink/src/triage/schemas.py:1)
 
 ## Benchmark Composition
 
@@ -111,6 +115,40 @@ Interpretation:
 - Remaining misses are still concentrated in `LOW` vs `MEDIUM`, not in obvious
   `SKIP`.
 
+### E. Decision Layer Comparison on 24 Samples (`seed=42`)
+
+Decision layer disabled:
+
+```bash
+.venv/bin/python scripts/evaluate_current_cascade.py \
+  --offline \
+  --seed 42 \
+  --disable-decision-layer \
+  --output-dir /tmp/automatic-downlink-eval-24-no-decision-layer
+```
+
+- Priority match: `18/24` = `75.0%`
+- Predicted distribution: `SKIP 13`, `MEDIUM 9`, `LOW 2`
+
+Decision layer enabled:
+
+```bash
+.venv/bin/python scripts/evaluate_current_cascade.py \
+  --offline \
+  --seed 42 \
+  --output-dir /tmp/automatic-downlink-eval-24-with-decision-layer
+```
+
+- Priority match: `20/24` = `83.3%`
+- Predicted distribution: `SKIP 13`, `MEDIUM 7`, `LOW 4`
+
+Interpretation:
+- With the same seed and the same tuned prefilter, the decision layer improved
+  the benchmark by `+2` correct samples.
+- The gains came from conservative `MEDIUM -> LOW` corrections on routine
+  terrain/vegetation scenes.
+- The layer did not change `SKIP`, `HIGH`, or `CRITICAL` behavior.
+
 ## Current Conclusion
 
 The benchmark now supports a stronger statement than before:
@@ -118,6 +156,8 @@ The benchmark now supports a stronger statement than before:
 - The deterministic prefilter is valuable and should stay.
 - There is still low-hanging fruit in the prefilter layer.
 - The current model is adequate for obvious `SKIP` cases.
+- A conservative post-VLM decision layer improves `LOW` vs `MEDIUM`
+  calibration without touching model weights.
 - The current model is not reliably calibrated on non-trivial real-domain
   `LOW` / `MEDIUM` decisions.
 - Prompt simplification and deterministic decoding alone do not fix the issue.
@@ -128,7 +168,7 @@ This does not force retraining immediately, but it does make the case for a
 targeted next experiment stronger. The next likely useful comparison is:
 
 1. shipped weights + shipped prompt
-2. shipped weights + narrower output schema
+2. shipped weights + current decision layer on a benchmark with `HIGH` examples
 3. updated or re-labeled fine-tune on a small real-domain set
 
 ## Open Questions
@@ -141,5 +181,7 @@ targeted next experiment stronger. The next likely useful comparison is:
   explicitly ambiguous in the product?
 - Would a smaller schema plus class-constrained post-processing improve
   calibration without retraining?
+- Does the decision layer still help once the benchmark includes `HIGH`
+  examples, or does it only improve the low-value regime?
 - Is the right next step a small real-domain fine-tune, or simply a better
   decision layer on top of the current descriptions?

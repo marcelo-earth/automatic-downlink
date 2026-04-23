@@ -36,7 +36,13 @@ class TriageDecision(BaseModel):
     position: dict[str, float] = Field(description="lat, lon, alt of capture")
     description: str = Field(description="Natural language description of the image content")
     priority: Priority
+    base_priority: Priority = Field(description="Priority before any post-VLM correction")
+    final_priority: Priority = Field(description="Priority after post-VLM correction")
     reasoning: str = Field(description="Why this priority was assigned")
+    override_reason: str | None = Field(
+        default=None,
+        description="Reason the post-VLM decision layer changed the priority",
+    )
     categories: list[str] = Field(default_factory=list, description="Content categories detected")
     downlink_action: DownlinkAction
     source: str = Field(description="sentinel or mapbox")
