@@ -28,12 +28,36 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 import src.triage.model as triage_model_module
+import src.triage.prompts as triage_prompts_module
 from src.triage.engine import TriageEngine
 from src.triage.schemas import Priority
 
 DEFAULT_MANIFEST = REPO_ROOT / "evals" / "sentinel_eval_v1.jsonl"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "evals" / "results"
 HF_CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
+SIMPLE_SYSTEM_PROMPT = """\
+You are a satellite image triage system. Analyze the image and respond ONLY with valid JSON.
+
+Return this schema and nothing else:
+{"description": "<1 sentence>", "priority": "<CRITICAL|HIGH|MEDIUM|LOW|SKIP>"}
+
+Priority guide:
+- SKIP: heavy clouds, no-data wedges, empty/obscured image
+- LOW: routine barren terrain, vegetation, or other low-information scene
+- MEDIUM: routine but informative urban, coastal, or agricultural scene
+- HIGH: unusual activity, deforestation, suspicious change, or important anomaly
+- CRITICAL: active disaster such as wildfire, flood, or severe damage
+"""
+SIMPLE_USER_PROMPT = "Triage this satellite image. Respond with JSON only using description and priority."
+GENERATION_PRESETS = {
+    "shipped": dict(triage_model_module.GENERATION_KWARGS),
+    "deterministic": {
+        "max_new_tokens": 192,
+        "temperature": 0.0,
+        "do_sample": False,
+        "repetition_penalty": 1.0,
+    },
+}
 
 
 def _snapshot_dir(repo_id: str, revision: str | None = None) -> Path:
@@ -67,6 +91,25 @@ def resolve_model_source(model_id: str, revision: str | None, offline: bool) -> 
     if not offline:
         return model_id
     return str(_snapshot_dir(model_id, revision))
+
+
+def configure_generation(preset: str) -> dict[str, Any]:
+    if preset not in GENERATION_PRESETS:
+        raise ValueError(f"Unknown generation preset: {preset}")
+    generation_kwargs = dict(GENERATION_PRESETS[preset])
+    triage_model_module.GENERATION_KWARGS = generation_kwargs
+    return generation_kwargs
+
+
+def configure_prompts(prompt_mode: str) -> tuple[str, str]:
+    if prompt_mode == "shipped":
+        return triage_prompts_module.TRIAGE_SYSTEM_PROMPT, triage_prompts_module.TRIAGE_USER_PROMPT
+    if prompt_mode == "simple":
+        triage_prompts_module.TRIAGE_SYSTEM_PROMPT = SIMPLE_SYSTEM_PROMPT
+        triage_prompts_module.TRIAGE_USER_PROMPT = SIMPLE_USER_PROMPT
+        triage_prompts_module.PROMPT_PROFILES["default"] = SIMPLE_SYSTEM_PROMPT
+        return SIMPLE_SYSTEM_PROMPT, SIMPLE_USER_PROMPT
+    raise ValueError(f"Unknown prompt mode: {prompt_mode}")
 
 
 def load_manifest(path: Path) -> list[dict[str, Any]]:
@@ -140,6 +183,9 @@ def render_report(
     manifest_path: Path,
     model_source: str,
     processor_source: str,
+    generation_preset: str,
+    generation_kwargs: dict[str, Any],
+    prompt_mode: str,
     summary: dict[str, Any],
     results: list[dict[str, Any]],
 ) -> str:
@@ -148,7 +194,9 @@ def render_report(
         "",
         f"**Manifest:** {manifest_path.relative_to(REPO_ROOT)}  ",
         f"**Model source:** {model_source}  ",
-        f"**Processor source:** {processor_source}",
+        f"**Processor source:** {processor_source}  ",
+        f"**Generation preset:** {generation_preset} `{generation_kwargs}`  ",
+        f"**Prompt mode:** {prompt_mode}",
         "",
         "## Summary",
         "",
@@ -207,6 +255,18 @@ def main() -> None:
         action="store_true",
         help="Resolve model and processor from the local Hugging Face cache.",
     )
+    parser.add_argument(
+        "--generation-preset",
+        choices=tuple(GENERATION_PRESETS),
+        default="shipped",
+        help="Generation config to use for evaluation.",
+    )
+    parser.add_argument(
+        "--prompt-mode",
+        choices=("shipped", "simple"),
+        default="shipped",
+        help="Prompt schema to use for evaluation.",
+    )
     args = parser.parse_args()
 
     manifest_path = args.manifest.resolve()
@@ -214,6 +274,8 @@ def main() -> None:
 
     model_source = resolve_model_source(args.model_id, args.model_revision, args.offline)
     processor_source = resolve_model_source(args.processor_id, None, args.offline)
+    generation_kwargs = configure_generation(args.generation_preset)
+    configure_prompts(args.prompt_mode)
 
     triage_model_module.BASE_MODEL_ID = processor_source
     model = triage_model_module.TriageModel(model_id=model_source)
@@ -230,7 +292,16 @@ def main() -> None:
     results_path = output_dir / f"{stem}_results.json"
     summary_path = output_dir / f"{stem}_summary.json"
 
-    report = render_report(manifest_path, model_source, processor_source, summary, results)
+    report = render_report(
+        manifest_path,
+        model_source,
+        processor_source,
+        args.generation_preset,
+        generation_kwargs,
+        args.prompt_mode,
+        summary,
+        results,
+    )
     report_path.write_text(report, encoding="utf-8")
     results_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

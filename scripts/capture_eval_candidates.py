@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -103,6 +104,18 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print planned captures without calling SimSat or writing files.",
     )
+    parser.add_argument(
+        "--retries",
+        type=int,
+        default=2,
+        help="How many times to retry a failed SimSat fetch per candidate (default: 2).",
+    )
+    parser.add_argument(
+        "--retry-delay",
+        type=float,
+        default=1.0,
+        help="Seconds to wait between retries after a failed SimSat fetch (default: 1.0).",
+    )
     return parser.parse_args()
 
 
@@ -148,6 +161,25 @@ def append_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             fh.write(json.dumps(row) + "\n")
 
 
+def fetch_with_retry(
+    fetch_fn,
+    *,
+    retries: int,
+    retry_delay: float,
+    candidate_id: str,
+):
+    attempts = retries + 1
+    for attempt in range(1, attempts + 1):
+        try:
+            return fetch_fn()
+        except Exception as exc:
+            if attempt == attempts:
+                print(f"[warn] {candidate_id}: failed after {attempts} attempt(s): {exc}")
+                return None
+            print(f"[warn] {candidate_id}: attempt {attempt}/{attempts} failed: {exc}")
+            time.sleep(retry_delay)
+
+
 def capture_historical_demo(args: argparse.Namespace, client: SimSatClient) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     fetch_timestamp = historical_timestamp(args.timestamp)
@@ -176,14 +208,21 @@ def capture_historical_demo(args: argparse.Namespace, client: SimSatClient) -> l
             )
             continue
 
-        result = client.get_sentinel_historical(
-            lon=lon,
-            lat=lat,
-            timestamp=fetch_timestamp,
-            spectral_bands=args.bands,
-            size_km=args.size_km,
-            window_seconds=args.window_seconds,
+        result = fetch_with_retry(
+            lambda: client.get_sentinel_historical(
+                lon=lon,
+                lat=lat,
+                timestamp=fetch_timestamp,
+                spectral_bands=args.bands,
+                size_km=args.size_km,
+                window_seconds=args.window_seconds,
+            ),
+            retries=args.retries,
+            retry_delay=args.retry_delay,
+            candidate_id=candidate_id,
         )
+        if result is None:
+            continue
         if result.image is None:
             continue
         result.image.save(output_path)
@@ -228,12 +267,27 @@ def capture_current(args: argparse.Namespace, client: SimSatClient) -> list[dict
             )
         ]
 
-    position = client.get_position()
-    result = client.get_sentinel_current(
-        spectral_bands=args.bands,
-        size_km=args.size_km,
-        window_seconds=args.window_seconds,
+    position = fetch_with_retry(
+        client.get_position,
+        retries=args.retries,
+        retry_delay=args.retry_delay,
+        candidate_id="current_position",
     )
+    if position is None:
+        return []
+
+    result = fetch_with_retry(
+        lambda: client.get_sentinel_current(
+            spectral_bands=args.bands,
+            size_km=args.size_km,
+            window_seconds=args.window_seconds,
+        ),
+        retries=args.retries,
+        retry_delay=args.retry_delay,
+        candidate_id="current_image",
+    )
+    if result is None:
+        return []
     if result.image is None:
         return []
 

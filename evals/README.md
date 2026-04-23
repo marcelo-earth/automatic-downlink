@@ -44,6 +44,17 @@ Useful scripts:
 - `scripts/register_eval_samples.py`
   Validates reviewed rows and appends them into an evaluation manifest.
 
+Related directories:
+
+- `evals/candidates/`
+  Raw candidate captures and capture metadata before review.
+
+- `evals/review_batches/`
+  Reviewed label batches that can be merged into the main manifest.
+
+- `evals/results/`
+  Human-readable notes on benchmark growth and evaluation outcomes.
+
 Examples:
 
 ```bash
