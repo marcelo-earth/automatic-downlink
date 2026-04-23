@@ -4,6 +4,11 @@
 
 Build a **credible onboard downlink triage system** for satellite imagery, not just a model that emits plausible JSON.
 
+This is the parent experiment.
+
+- `EXP_6`: real-domain benchmark, cascade design, prefilter tuning, and non-training improvements
+- `EXP_6_HIGH`: targeted continuation focused on recovering `HIGH` recall on real-domain industrial / infrastructure scenes
+
 The target system should:
 
 1. Reject obvious junk cheaply before invoking the VLM
