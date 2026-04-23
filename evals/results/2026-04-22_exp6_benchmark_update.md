@@ -15,6 +15,9 @@ Date: `2026-04-22`
 - Extended
   [`scripts/evaluate_current_cascade.py`](/Users/marcelo/Documents/GitHub/automatic-downlink/scripts/evaluate_current_cascade.py:1)
   to compare generation presets and prompt modes
+- Added two bounded prefilter heuristics in
+  [`src/triage/engine.py`](/Users/marcelo/Documents/GitHub/automatic-downlink/src/triage/engine.py:1)
+  for mixed cloud-dominated frames and bright barren terrain
 
 ## Benchmark Composition
 
@@ -85,15 +88,41 @@ Interpretation:
 - Instead of collapsing toward `MEDIUM`, it over-escalates many routine `LOW`
   scenes to `HIGH`.
 
+### D. Tuned Prefilter + Shipped Generation on 24 Samples
+
+Command:
+
+```bash
+.venv/bin/python scripts/evaluate_current_cascade.py \
+  --offline \
+  --output-dir /tmp/automatic-downlink-eval-24-prefilter-tuned
+```
+
+- Samples: `24`
+- Priority match: `20/24` = `83.3%`
+- Prefilter hits: `14/24` = `58.3%`
+- Avg latency: `2.97s`
+- Predicted distribution: `SKIP 13`, `MEDIUM 7`, `LOW 4`
+
+Interpretation:
+- This is the best result so far on the 24-sample benchmark.
+- The added rules correctly absorbed a cloud-dominated rainforest frame and a
+  bright overexposed desert frame before they reached the VLM.
+- Remaining misses are still concentrated in `LOW` vs `MEDIUM`, not in obvious
+  `SKIP`.
+
 ## Current Conclusion
 
 The benchmark now supports a stronger statement than before:
 
 - The deterministic prefilter is valuable and should stay.
+- There is still low-hanging fruit in the prefilter layer.
 - The current model is adequate for obvious `SKIP` cases.
 - The current model is not reliably calibrated on non-trivial real-domain
   `LOW` / `MEDIUM` decisions.
 - Prompt simplification and deterministic decoding alone do not fix the issue.
+- Small, benchmark-driven cascade improvements can move the total score
+  materially without any retraining.
 
 This does not force retraining immediately, but it does make the case for a
 targeted next experiment stronger. The next likely useful comparison is:
@@ -108,6 +137,8 @@ targeted next experiment stronger. The next likely useful comparison is:
   story, especially partially occluded urban strips?
 - Should no-data wedges be handled by stronger deterministic rules so they never
   reach the VLM?
+- Should partially missing urban tiles be forced to `SKIP`, `LOW`, or flagged as
+  explicitly ambiguous in the product?
 - Would a smaller schema plus class-constrained post-processing improve
   calibration without retraining?
 - Is the right next step a small real-domain fine-tune, or simply a better

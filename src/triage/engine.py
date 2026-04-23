@@ -53,7 +53,9 @@ class TriageEngine:
         brightness = mean_rgb.mean()
         std_rgb = arr.std()
         white_frac = ((arr > 220).all(axis=2)).mean()
+        near_white_frac = ((arr > 245).all(axis=2)).mean()
         dark_frac = ((arr < 30).all(axis=2)).mean()
+        low_sat_frac = ((arr.max(axis=2) - arr.min(axis=2)) < 12).mean()
 
         # Heavy cloud cover: mostly white/bright pixels
         if white_frac > 0.6 or (brightness > 200 and std_rgb < 30):
@@ -65,6 +67,21 @@ class TriageEngine:
                 "categories": ["cloud_cover"],
             }
 
+        # Mixed cloud fields can evade the pure-white rule while still hiding the scene.
+        if brightness > 125 and white_frac > 0.2 and low_sat_frac > 0.3 and dark_frac < 0.1:
+            logger.info(
+                "Pre-filter: mixed cloud cover (white=%.0f%%, low_sat=%.0f%%, bright=%.0f)",
+                white_frac * 100,
+                low_sat_frac * 100,
+                brightness,
+            )
+            return {
+                "description": "Cloud and haze dominate the frame, leaving too little clear ground detail.",
+                "priority": "SKIP",
+                "reasoning": "Mixed bright cloud cover detected by pixel analysis — frame skipped before VLM inference.",
+                "categories": ["cloud_cover"],
+            }
+
         # Very dark / night image
         if dark_frac > 0.7 or brightness < 25:
             logger.info("Pre-filter: dark image (dark=%.0f%%, bright=%.0f)", dark_frac * 100, brightness)
@@ -73,6 +90,21 @@ class TriageEngine:
                 "priority": "SKIP",
                 "reasoning": "Dark/underexposed image detected by pixel analysis — VLM skipped.",
                 "categories": [],
+            }
+
+        # Very bright, low-detail barren scenes are typically overexposed desert or salt flats.
+        if brightness > 210 and std_rgb < 45 and white_frac < 0.1 and near_white_frac < 0.05:
+            logger.info(
+                "Pre-filter: bright barren terrain (bright=%.0f, std=%.1f, white=%.0f%%)",
+                brightness,
+                std_rgb,
+                white_frac * 100,
+            )
+            return {
+                "description": "Bright barren terrain with limited actionable detail.",
+                "priority": "LOW",
+                "reasoning": "Overexposed low-information terrain detected by pixel analysis — minimal downlink value.",
+                "categories": ["terrain"],
             }
 
         # Featureless terrain: low contrast, mid-brightness (desert, ocean, ice)
