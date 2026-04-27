@@ -56,7 +56,7 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
         "torch==2.5.1",
-        "transformers==4.51.3",
+        "transformers==5.2.0",
         "accelerate>=0.26.0",
         "pillow",
         "huggingface_hub",
@@ -81,7 +81,7 @@ def run_eval() -> dict:
     print(f"Loading processor from {BASE_MODEL_ID}...")
     processor = AutoProcessor.from_pretrained(BASE_MODEL_ID)
 
-    print(f"Loading checkpoint from {CHECKPOINT_DIR}...")
+    print(f"Loading model from checkpoint {CHECKPOINT_DIR}...")
     model = AutoModelForImageTextToText.from_pretrained(
         CHECKPOINT_DIR,
         device_map="cuda",
