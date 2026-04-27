@@ -10,7 +10,7 @@ dataset:
   path: "/satellite-vlm/data/exp6_train.jsonl"
   type: "vlm_sft"
   limit: null
-  test_size: 0      # temporal eval set is separate (exp6_eval.jsonl)
+  test_size: 0.1    # small internal split for loss tracking; real eval uses exp6_eval.jsonl
   image_root: null  # images are base64-encoded inline
 
 training_config:
