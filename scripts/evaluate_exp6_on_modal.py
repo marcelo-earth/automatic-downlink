@@ -17,31 +17,31 @@ from pathlib import Path
 import modal
 
 VOLUME_NAME = "satellite-vlm"
-CHECKPOINT_DIR = (
-    "/satellite-vlm/LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-20260427_024215"
-    "/checkpoint-14"
-)
+_RUN = "LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-20260427_024215"
+_CKPT = "LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-e4s14-20260427_024215"
+CHECKPOINT_DIR = f"/satellite-vlm/{_RUN}/{_CKPT}"
 EVAL_JSONL = "/satellite-vlm/data/exp6_eval.jsonl"
 IMAGE_ROOT = "/satellite-vlm"
 BASE_MODEL_ID = "LiquidAI/LFM2.5-VL-450M"
 
 SYSTEM_PROMPT = """\
-You are an onboard satellite hazard triage system. You receive two images of the same scene:
-1. RGB composite (natural color)
-2. SWIR composite (swir16, nir08, red) — active fire appears bright red/orange, burn scars appear dark brown/black, floodwater appears dark blue, stressed vegetation appears orange/yellow, healthy vegetation appears bright green, urban areas appear magenta/pink
+You are an onboard satellite hazard triage system. Analyze the two images of the same scene and respond ONLY with a JSON object containing these fields: description, priority, reasoning, categories. No other text.
 
-Analyze both images together and respond ONLY with a JSON object. No other text.
+The first image is a natural color (RGB) view. The second image is a false-color SWIR composite where active fire appears bright red/orange, burn scars appear dark brown/black, floodwater appears dark blue, stressed vegetation appears orange/yellow, healthy vegetation appears bright green, and urban areas appear magenta/pink.
 
 Hazard scope: wildfire, flood, oil spill, landslide.
 
-Priority:
+Priority values:
 - CRITICAL: active hazard clearly visible (fire, flooding, large spill, fresh landslide)
 - HIGH: visible hazard aftermath, probable hazard, or elevated hazard risk
 - MEDIUM: informative or anomalous scene but no confirmed hazard
 - LOW: routine low-value terrain, vegetation, or barren landscape
-- SKIP: heavy clouds, no-data wedges, empty/obscured image, image artifacts\
+- SKIP: heavy clouds, no-data wedges, empty/obscured image
+
+Example output:
+{"description": "Large burn scar visible across hillside with no active fire", "priority": "HIGH", "reasoning": "Post-fire burn scar confirmed in both views", "categories": ["wildfire"]}\
 """
-USER_PROMPT = "Triage this satellite image pair (RGB then SWIR). Respond with JSON only."
+USER_PROMPT = "Analyze this image pair and respond with JSON only."
 
 GENERATION_KWARGS = {
     "max_new_tokens": 256,
@@ -56,6 +56,7 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
         "torch==2.5.1",
+        "torchvision==0.20.1",
         "transformers==5.2.0",
         "accelerate>=0.26.0",
         "pillow",
@@ -78,10 +79,24 @@ def run_eval() -> dict:
     from PIL import Image as PILImage
     from transformers import AutoModelForImageTextToText, AutoProcessor
 
-    print(f"Loading processor from {BASE_MODEL_ID}...")
-    processor = AutoProcessor.from_pretrained(BASE_MODEL_ID)
+    import os
+    # Debug: show what's in the volume
+    print("Volume root contents:", os.listdir("/satellite-vlm"))
+    ckpt_exists = os.path.isdir(CHECKPOINT_DIR)
+    print(f"Checkpoint dir exists: {ckpt_exists} — {CHECKPOINT_DIR}")
+    if not ckpt_exists:
+        # Try to find any checkpoint in the volume
+        for entry in os.listdir("/satellite-vlm"):
+            full = f"/satellite-vlm/{entry}"
+            if os.path.isdir(full):
+                print(f"  dir: {full}")
+                for sub in os.listdir(full):
+                    print(f"    {sub}")
 
-    print(f"Loading model from checkpoint {CHECKPOINT_DIR}...")
+    print(f"Loading processor from checkpoint...")
+    processor = AutoProcessor.from_pretrained(CHECKPOINT_DIR)
+
+    print(f"Loading model from checkpoint...")
     model = AutoModelForImageTextToText.from_pretrained(
         CHECKPOINT_DIR,
         device_map="cuda",
@@ -137,17 +152,24 @@ def run_eval() -> dict:
 
         # Parse priority from response
         predicted = "PARSE_ERROR"
-        try:
-            parsed = json.loads(raw)
-            predicted = parsed.get("priority", "PARSE_ERROR")
-        except json.JSONDecodeError:
-            m = re.search(r'"priority"\s*:\s*"([A-Z]+)"', raw)
-            if m:
-                predicted = m.group(1)
+        # Try to find priority anywhere in the output
+        m = re.search(r'"priority"\s*:\s*"([A-Z]+)"', raw)
+        if m:
+            predicted = m.group(1)
+        else:
+            try:
+                parsed = json.loads(raw)
+                # Walk all string values looking for a priority keyword
+                for v in parsed.values():
+                    if isinstance(v, str) and v.upper() in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "SKIP"):
+                        predicted = v.upper()
+                        break
+            except json.JSONDecodeError:
+                pass
 
         match = predicted == expected
         print(f"[{i+1}/{len(samples)}] {rgb_path.stem[:40]} | expected={expected} predicted={predicted} {'✓' if match else '✗'}")
-        print(f"  raw: {raw[:120]}")
+        print(f"  raw: {raw[:300]}")
 
         results.append({
             "id": rgb_path.stem.replace("__rgb", ""),

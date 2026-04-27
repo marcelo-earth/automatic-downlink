@@ -75,32 +75,24 @@ Respond with JSON only.\
 """
 
 TRIAGE_DUAL_SYSTEM_PROMPT = """\
-You are an onboard satellite hazard triage system. You receive two images of the same scene:
-1. RGB composite (natural color)
-2. SWIR composite (swir16, nir08, red) — active fire appears bright red/orange, burn scars appear dark brown/black, floodwater appears dark blue, stressed vegetation appears orange/yellow, healthy vegetation appears bright green, urban areas appear magenta/pink
+You are an onboard satellite hazard triage system. Analyze the two images of the same scene and respond ONLY with a JSON object containing these fields: description, priority, reasoning, categories. No other text.
 
-Analyze both images together and respond ONLY with a JSON object. No other text.
+The first image is a natural color (RGB) view. The second image is a false-color SWIR composite where active fire appears bright red/orange, burn scars appear dark brown/black, floodwater appears dark blue, stressed vegetation appears orange/yellow, healthy vegetation appears bright green, and urban areas appear magenta/pink.
 
 Hazard scope: wildfire, flood, oil spill, landslide.
 
-Priority:
+Priority values:
 - CRITICAL: active hazard clearly visible (fire, flooding, large spill, fresh landslide)
 - HIGH: visible hazard aftermath, probable hazard, or elevated hazard risk
 - MEDIUM: informative or anomalous scene but no confirmed hazard
 - LOW: routine low-value terrain, vegetation, or barren landscape
-- SKIP: heavy clouds, no-data wedges, empty/obscured image, image artifacts
+- SKIP: heavy clouds, no-data wedges, empty/obscured image
 
-If both images are mostly white/bright with no ground features visible, mark SKIP.
-
-Examples:
-{"description": "Active wildfire with visible smoke plumes; SWIR shows bright orange active fire front", "priority": "CRITICAL", "reasoning": "Active fire confirmed in SWIR, immediate alert needed", "categories": ["wildfire"]}
-{"description": "Extensive dark burn scar across hillside in both RGB and SWIR", "priority": "HIGH", "reasoning": "Post-wildfire burn scar operationally relevant", "categories": ["wildfire", "aftermath"]}
-{"description": "Dark blue inundation visible in SWIR over agricultural fields", "priority": "CRITICAL", "reasoning": "Active flooding confirmed by SWIR water signature", "categories": ["flood"]}
-{"description": "Clean urban scene with no anomaly in RGB or SWIR", "priority": "MEDIUM", "reasoning": "Informative baseline, no hazard detected", "categories": ["urban"]}
-{"description": "Image pair almost entirely obscured by cloud", "priority": "SKIP", "reasoning": "Cloud cover exceeds 80%, no usable data", "categories": ["cloud_cover"]}\
+Example output:
+{"description": "Large burn scar visible across hillside with no active fire", "priority": "HIGH", "reasoning": "Post-fire burn scar confirmed in both views", "categories": ["wildfire"]}\
 """
 
-TRIAGE_DUAL_USER_PROMPT = "Triage this satellite image pair (RGB then SWIR). Respond with JSON only."
+TRIAGE_DUAL_USER_PROMPT = "Analyze this image pair and respond with JSON only."
 
 PROMPT_PROFILES: dict[str, str] = {
     "default": TRIAGE_SYSTEM_PROMPT,

@@ -84,10 +84,12 @@ def main() -> None:
         swir_vol_path = f"{IMAGE_ROOT_IN_VOLUME}/{swir_local.name}"
 
         hazard_type = meta.get("hazard_type", "unknown")
+        # Use labeler_notes as description — they're concise and don't start with
+        # "RGB shows... SWIR confirms..." (which caused the model to use band names as JSON keys).
         assistant_json = json.dumps({
-            "description": lab["description"],
+            "description": lab["labeler_notes"],
             "priority": lab["priority"],
-            "reasoning": lab["labeler_notes"],
+            "reasoning": lab["description"],
             "categories": [hazard_type],
         })
 
