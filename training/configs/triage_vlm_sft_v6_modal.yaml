@@ -1,0 +1,35 @@
+project_name: "automatic-downlink-triage"
+model_name: "LFM2.5-VL-450M"
+training_type: "vlm_sft"
+
+# Exp 6: full fine-tune on real Sentinel-2 RGB+SWIR pairs.
+# Full fine-tune (use_peft: false) so the vision tower learns SWIR color semantics.
+# Dataset: 49 dual-image training samples (teacher-labeled, temporally split).
+
+dataset:
+  path: "/satellite-vlm/data/exp6_train.jsonl"
+  type: "vlm_sft"
+  limit: null
+  test_size: 0      # temporal eval set is separate (exp6_eval.jsonl)
+  image_root: null  # images are base64-encoded inline
+
+training_config:
+  extends: "DEFAULT_VLM_SFT"
+  num_train_epochs: 5
+  per_device_train_batch_size: 2
+  learning_rate: 2e-5
+  vision_encoder_lr_multiplier: 1.0   # full fine-tune — train vision tower at base LR
+  tracker: "trackio"
+  trackio_space_id: "marcelo-earth/automatic-downlink-trackio"
+
+peft_config:
+  extends: "DEFAULT_VLM_LORA"
+  use_peft: false
+
+modal:
+  app_name: "automatic-downlink"
+  gpu: "H100:1"
+  timeout: 14400
+  output_volume: "satellite-vlm"
+  output_dir: "/satellite-vlm"
+  detach: false
