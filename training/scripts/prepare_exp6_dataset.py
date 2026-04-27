@@ -15,9 +15,8 @@ would place near-identical captures in both sets. Instead we cut by timestamp.
 
 from __future__ import annotations
 
-import base64
 import json
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 from src.triage.prompts import TRIAGE_DUAL_SYSTEM_PROMPT, TRIAGE_DUAL_USER_PROMPT
@@ -27,10 +26,10 @@ CATALOG_PATH = ROOT / "evals/candidates/hazard_grid_v1.jsonl"
 LABELS_PATH = ROOT / "evals/candidates/labels_hazard_grid_v1.jsonl"
 DATA_DIR = ROOT / "training/data"
 
-
-def encode_image(path: Path) -> str:
-    data = base64.b64encode(path.read_bytes()).decode()
-    return f"data:image/png;base64,{data}"
+# Paths stored in JSONL are relative to image_root in the training config.
+# On Modal the volume mounts at /satellite-vlm/, so image_root="/satellite-vlm"
+# and paths here are relative to that mount point.
+IMAGE_ROOT_IN_VOLUME = "evals/candidates/hazard_grid_v1"
 
 
 def main() -> None:
@@ -73,13 +72,16 @@ def main() -> None:
             print(f"  WARNING: no catalog entry for {gid}, skipping")
             continue
 
-        rgb_path = ROOT / meta["image_path"]
-        # Derive SWIR path from RGB path
-        swir_path = Path(str(rgb_path).replace("__rgb.png", "__swir.png"))
+        rgb_local = ROOT / meta["image_path"]
+        swir_local = Path(str(rgb_local).replace("__rgb.png", "__swir.png"))
 
-        if not rgb_path.exists() or not swir_path.exists():
+        if not rgb_local.exists() or not swir_local.exists():
             print(f"  WARNING: missing image for {gid}, skipping")
             continue
+
+        # Store volume-relative paths (image_root="/satellite-vlm" in training config)
+        rgb_vol_path = f"{IMAGE_ROOT_IN_VOLUME}/{rgb_local.name}"
+        swir_vol_path = f"{IMAGE_ROOT_IN_VOLUME}/{swir_local.name}"
 
         hazard_type = meta.get("hazard_type", "unknown")
         assistant_json = json.dumps({
@@ -93,8 +95,8 @@ def main() -> None:
             "messages": [
                 {"role": "system", "content": [{"type": "text", "text": TRIAGE_DUAL_SYSTEM_PROMPT}]},
                 {"role": "user", "content": [
-                    {"type": "image", "image": encode_image(rgb_path)},
-                    {"type": "image", "image": encode_image(swir_path)},
+                    {"type": "image", "image": rgb_vol_path},
+                    {"type": "image", "image": swir_vol_path},
                     {"type": "text", "text": TRIAGE_DUAL_USER_PROMPT},
                 ]},
                 {"role": "assistant", "content": [{"type": "text", "text": assistant_json}]},
