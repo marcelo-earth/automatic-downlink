@@ -17,8 +17,8 @@ from pathlib import Path
 import modal
 
 VOLUME_NAME = "satellite-vlm"
-_RUN = "LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-20260427_024215"
-_CKPT = "LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-e4s14-20260427_024215"
+_RUN = "LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-20260427_043908"
+_CKPT = "LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-e4s14-20260427_043908"
 CHECKPOINT_DIR = f"/satellite-vlm/{_RUN}/{_CKPT}"
 EVAL_JSONL = "/satellite-vlm/data/exp6_eval.jsonl"
 IMAGE_ROOT = "/satellite-vlm"
