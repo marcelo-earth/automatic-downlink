@@ -89,6 +89,22 @@ async def get_stats():
     return _compute_stats()
 
 
+@app.get("/api/position")
+async def get_position():
+    if not SIMSAT_URL:
+        return {"lat": 0, "lon": 0, "alt": 0, "live": False}
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            r = await client.get(f"{SIMSAT_URL}/data/current/position", timeout=5)
+            data = r.json()
+            lon, lat, alt = data["lon-lat-alt"]
+            live = not (lon == 0 and lat == 0 and alt == 0)
+            return {"lat": lat, "lon": lon, "alt": alt, "live": live}
+    except Exception:
+        return {"lat": 0, "lon": 0, "alt": 0, "live": False}
+
+
 @app.post("/api/decisions")
 async def add_decision(decision: TriageDecision):
     _decisions.append(decision.model_dump(mode="json"))

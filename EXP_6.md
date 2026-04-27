@@ -611,3 +611,33 @@ That is the version of the project most likely to both:
 
 - work better technically
 - and land better with judges
+
+---
+
+## Retrospective: v5 attempt (2026-04-22)
+
+v5 tried to fix the hazard gap by mixing the existing VRSBench supervision with 17 hand-labeled hazard samples (10x oversampled to 50 copies). Training converged cleanly (eval loss 2.24 → 1.03), but on the frozen real-domain eval the v5 model scored **CRITICAL 0/3 and HIGH 0/2** — actually worse than the unchanged baseline on `HIGH`. The predicted distribution had zero `CRITICAL` and zero `HIGH` across all 45 samples.
+
+Root cause was structural, not a tuning bug:
+
+1. **Data imbalance.** 2638 VRSBench + 50 hazard copies = 1.9% hazard signal. The model learned to write VRSBench-style captions ("The image sourced from GoogleEarth features...") and default to `MEDIUM` / `LOW`. On the Attica wildfire it wrote "a small town and a large parking lot" — it never saw the burn scar.
+2. **RGB-only input.** Active hazards (burn scars, flood water, stressed vegetation) are strongest in SWIR. Training on RGB-only asks the model to detect hazards from the weakest available band.
+3. **LoRA on vision tower.** LoRA only adapts the language head. The vision encoder, which actually needs to learn that SWIR composites carry hazard signal, was effectively frozen.
+4. **Oversampling vs. diversity.** 10x copies of 17 images teaches memorization of 17 scenes, not generalization across hazard types and conditions.
+5. **Decision layer is defensive only.** The cascade can downgrade `MEDIUM → LOW` but cannot escalate `MEDIUM → HIGH`. If the VLM never emits `HIGH` or `CRITICAL`, nothing downstream can recover the hazard.
+
+## Revised direction for the next training pass
+
+Based on the v5 post-mortem, the next training pass follows a structurally different approach:
+
+1. **Drop VRSBench entirely** for this model. Pure real-domain supervision.
+2. **Capture pairs, not single images.** Every training sample is a co-registered `(RGB, SWIR)` pair for the same tile. SWIR is the primary hazard signal.
+3. **Programmatic grid sampling.** Locations × timestamps × spatial offsets, chosen so the same regions contribute both hazard-present and non-hazard frames — giving real class balance instead of forced oversampling.
+4. **Frontier-model teacher labels.** Each `(RGB, SWIR)` pair is labeled by a frontier model against the hazard priority policy. No hand-labeling at scale.
+5. **Full fine-tune, not LoRA.** The vision tower needs to actually learn what SWIR composites look like. LoRA cannot retrain an encoder.
+6. **Temporal train/test split.** Older 80% of timestamps go to train, newest 20% to eval. Prevents near-duplicates from Sentinel-2's ~5-day revisit from leaking across the split.
+7. **Weighted hazard scope.** Wildfire and flood get the most samples (strongest SWIR signatures). Landslides and oil spills get smaller representation — the system still covers them in the demo but the model does its strongest work where the physics cooperates.
+
+Target for the first pass: ~200 labeled `(RGB, SWIR)` pairs spread across all four hazards, with enough non-hazard frames from the same regions that the model learns the contrast — not just the positive class.
+
+Success criterion stays the same as the rest of Exp 6: improvement on the frozen real-domain eval set, not training loss. Specifically, measurable `CRITICAL` and `HIGH` recall instead of zero.

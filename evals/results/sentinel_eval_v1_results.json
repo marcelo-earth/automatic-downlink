@@ -1,0 +1,1565 @@
+[
+  {
+    "id": "sentinel_amazon",
+    "image_path": "test_images/sentinel_amazon.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Almost entirely cloud-covered frame with essentially no useful ground information.",
+    "elapsed_s": 0.01,
+    "decision": {
+      "image_id": "sentinel_amazon",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "test_images"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "sentinel_lima",
+    "image_path": "test_images/sentinel_lima.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Urban tile heavily obscured by cloud cover; useful structures are only partially visible.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "sentinel_lima",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "test_images"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "sentinel_sahara",
+    "image_path": "test_images/sentinel_sahara.png",
+    "expected_priority": "LOW",
+    "predicted_priority": "LOW",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Featureful desert terrain but no obvious activity, infrastructure urgency, or anomaly worth thumbnail-first review.",
+    "elapsed_s": 5.54,
+    "decision": {
+      "image_id": "sentinel_sahara",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image provided is a high-resolution aerial view of a barren landscape with a distinct pattern of dry, cracked earth. The terrain is characterized by a series of winding, irregular lines that suggest the presence of natural features such as rivers or streams. The color palette is dominated by earthy tones, with shades of brown and tan. There are no visible signs of human activity or structures in the image.",
+      "priority": "LOW",
+      "base_priority": "LOW",
+      "final_priority": "LOW",
+      "reasoning": "Scene contains minimal actionable information or significant activity",
+      "override_reason": null,
+      "categories": [
+        "terrain",
+        "vegetation",
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "test_images"
+    }
+  },
+  {
+    "id": "sentinel_test1",
+    "image_path": "test_images/sentinel_test1.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Coastal urban area with visible roads and dense settlement; routine but informative scene.",
+    "elapsed_s": 3.14,
+    "decision": {
+      "image_id": "sentinel_test1",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a densely populated urban area with a mix of residential and commercial buildings. The city is surrounded by a body of water, and the coastline is visible at the bottom of the image. There are several roads and bridges crisscrossing the city, with some roads appearing to be more prominent than others. The image also features a small body of water near the bottom left corner.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with identifiable features, routine city monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "water",
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "test_images"
+    }
+  },
+  {
+    "id": "amazon_20260422T234447Z",
+    "image_path": "evals/candidates/images/amazon_20260422T234447Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Cloud-dominated rainforest tile with only limited ground visibility; not worth spending downlink on the full frame.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "amazon_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Cloud and haze dominate the frame, leaving too little clear ground detail.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Mixed bright cloud cover detected by pixel analysis \u2014 frame skipped before VLM inference.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Cloud and haze dominate the frame, leaving too little clear ground detail.",
+      "priority": "SKIP",
+      "reasoning": "Mixed bright cloud cover detected by pixel analysis \u2014 frame skipped before VLM inference.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "borneo_20260422T234447Z",
+    "image_path": "evals/candidates/images/borneo_20260422T234447Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Almost entirely obscured by bright cloud cover, with no reliable surface detail to triage.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "borneo_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "cape_town_20260422T234447Z",
+    "image_path": "evals/candidates/images/cape_town_20260422T234447Z.png",
+    "expected_priority": "LOW",
+    "predicted_priority": "MEDIUM",
+    "priority_match": false,
+    "prefilter_hit": false,
+    "ambiguous": true,
+    "notes": "Useful urban/coastal detail is present, but roughly half the tile is missing and the lower-left quadrant is cloud-obscured.",
+    "elapsed_s": 2.06,
+    "decision": {
+      "image_id": "cape_town_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth features a coastal area with a distinctive circular structure located in the top-middle part of the image. The surrounding landscape includes a mix of urban development and natural features such as water bodies and vegetation.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with identifiable features, routine city monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "water",
+        "vegetation"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "greenland_20260422T234447Z",
+    "image_path": "evals/candidates/images/greenland_20260422T234447Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Nearly blank ice/cloud frame with no actionable structure or event visible.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "greenland_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "lausanne_20260422T234447Z",
+    "image_path": "evals/candidates/images/lausanne_20260422T234447Z.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Clear coastal urban tile with dense roads and settlement; routine but informative scene worth keeping above low-value terrain.",
+    "elapsed_s": 2.33,
+    "decision": {
+      "image_id": "lausanne_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image sourced from GoogleEarth features a densely populated urban area with a mix of residential and commercial buildings. The cityscape is characterized by a variety of structures, with some buildings appearing larger and more prominent than others. The coastline is visible along the bottom edge of the image, with a body of water adjacent to the urban area.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with identifiable features, routine city monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "water"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "lima_20260422T234447Z",
+    "image_path": "evals/candidates/images/lima_20260422T234447Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Tile is overwhelmingly no-data/black with only a thin sliver of city visible.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "lima_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "override_reason": null,
+      "categories": [],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "categories": []
+    }
+  },
+  {
+    "id": "nile_delta_20260422T234447Z",
+    "image_path": "evals/candidates/images/nile_delta_20260422T234447Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Mostly empty no-data wedge; the small visible agricultural strip is not enough to justify full downlink.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "nile_delta_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "override_reason": null,
+      "categories": [],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "categories": []
+    }
+  },
+  {
+    "id": "outback_20260422T234447Z",
+    "image_path": "evals/candidates/images/outback_20260422T234447Z.png",
+    "expected_priority": "LOW",
+    "predicted_priority": "LOW",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Clear geological terrain with strong texture but no obvious anomaly, infrastructure, or urgent activity.",
+    "elapsed_s": 2.28,
+    "decision": {
+      "image_id": "outback_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image provided is a high-resolution satellite view featuring a landscape with distinct geological features. The terrain exhibits a reddish-brown coloration, indicative of arid or desert conditions. There are visible cracks and fissures in the ground, suggesting geological activity or erosion. The image also contains a small, circular feature located towards the top-right corner.",
+      "priority": "LOW",
+      "base_priority": "LOW",
+      "final_priority": "LOW",
+      "reasoning": "Low-information ice with minimal identifiable features",
+      "override_reason": null,
+      "categories": [
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "sahara_20260422T234447Z",
+    "image_path": "evals/candidates/images/sahara_20260422T234447Z.png",
+    "expected_priority": "LOW",
+    "predicted_priority": "LOW",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": true,
+    "notes": "Overexposed desert scene with some terrain signal, but still routine and low-value for downlink prioritization.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "sahara_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Bright barren terrain with limited actionable detail.",
+      "priority": "LOW",
+      "base_priority": "LOW",
+      "final_priority": "LOW",
+      "reasoning": "Overexposed low-information terrain detected by pixel analysis \u2014 minimal downlink value.",
+      "override_reason": null,
+      "categories": [
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Bright barren terrain with limited actionable detail.",
+      "priority": "LOW",
+      "reasoning": "Overexposed low-information terrain detected by pixel analysis \u2014 minimal downlink value.",
+      "categories": [
+        "terrain"
+      ]
+    }
+  },
+  {
+    "id": "tokyo_20260422T234447Z",
+    "image_path": "evals/candidates/images/tokyo_20260422T234447Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Almost completely washed out by cloud or bright overexposure, leaving no useful urban detail.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "tokyo_20260422T234447Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "amazon_20260412T120000Z",
+    "image_path": "evals/candidates/images/amazon_20260412T120000Z.png",
+    "expected_priority": "LOW",
+    "predicted_priority": "LOW",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": true,
+    "notes": "Rainforest tile with visible canopy and scattered clouds, but no clear anomaly, infrastructure, or event worth elevated downlink priority.",
+    "elapsed_s": 2.22,
+    "decision": {
+      "image_id": "amazon_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a landscape with patches of snow and clouds. There are multiple snow-covered areas scattered across the image, with varying sizes and positions. The snow appears to be concentrated in certain regions, creating a contrast against the darker ground and the white clouds.",
+      "priority": "LOW",
+      "base_priority": "LOW",
+      "final_priority": "LOW",
+      "reasoning": "Low-information ice with minimal identifiable features",
+      "override_reason": null,
+      "categories": [
+        "vegetation",
+        "clouds",
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "borneo_20260412T120000Z",
+    "image_path": "evals/candidates/images/borneo_20260412T120000Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Almost entirely washed out by bright cloud or haze, leaving no trustworthy ground detail.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "borneo_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "cape_town_20260412T120000Z",
+    "image_path": "evals/candidates/images/cape_town_20260412T120000Z.png",
+    "expected_priority": "LOW",
+    "predicted_priority": "SKIP",
+    "priority_match": false,
+    "prefilter_hit": true,
+    "ambiguous": true,
+    "notes": "Urban/coastal structure is visible, but most of the tile is missing and only a narrow strip carries usable information.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "cape_town_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "override_reason": null,
+      "categories": [],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "categories": []
+    }
+  },
+  {
+    "id": "greenland_20260412T120000Z",
+    "image_path": "evals/candidates/images/greenland_20260412T120000Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Featureless bright ice or cloud scene with no actionable structure.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "greenland_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "lausanne_20260412T120000Z",
+    "image_path": "evals/candidates/images/lausanne_20260412T120000Z.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Clear dense urban tile with roads, shoreline, and mixed land use; routine but still informative.",
+    "elapsed_s": 2.26,
+    "decision": {
+      "image_id": "lausanne_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a densely populated urban area with a mix of residential and commercial buildings. The coastline is visible along the bottom edge of the image, with a body of water adjacent to the urban landscape. The image is rich in detail, providing a comprehensive view of the city's layout and features.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with dense development, routine city monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "terrain",
+        "water"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "lima_20260412T120000Z",
+    "image_path": "evals/candidates/images/lima_20260412T120000Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Overwhelmingly clouded frame with effectively no usable city detail.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "lima_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "nile_delta_20260412T120000Z",
+    "image_path": "evals/candidates/images/nile_delta_20260412T120000Z.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Mostly empty no-data wedge with only a thin visible strip at the edge.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "nile_delta_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "override_reason": null,
+      "categories": [],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "categories": []
+    }
+  },
+  {
+    "id": "outback_20260412T120000Z",
+    "image_path": "evals/candidates/images/outback_20260412T120000Z.png",
+    "expected_priority": "LOW",
+    "predicted_priority": "LOW",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Clear arid terrain with strong geological texture but no anomaly or urgent activity.",
+    "elapsed_s": 2.03,
+    "decision": {
+      "image_id": "outback_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth features a barren landscape with a prominent reddish-brown terrain. The terrain exhibits a rugged surface with visible cracks and fissures, suggesting geological activity or erosion. There are no distinct features or objects that stand out as significant in this barren scene.",
+      "priority": "LOW",
+      "base_priority": "LOW",
+      "final_priority": "LOW",
+      "reasoning": "Low-information barren with minimal identifiable features",
+      "override_reason": null,
+      "categories": [
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "sahara_20260412T120000Z",
+    "image_path": "evals/candidates/images/sahara_20260412T120000Z.png",
+    "expected_priority": "LOW",
+    "predicted_priority": "LOW",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Routine desert terrain with mild haze or overexposure; visually interesting but low downlink value.",
+    "elapsed_s": 2.03,
+    "decision": {
+      "image_id": "sahara_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth features a barren landscape with a distinct pattern of light and dark areas. The terrain exhibits a mix of light and dark patches, with a notable dark area in the center of the image. There are no discernible features or objects that stand out prominently.",
+      "priority": "LOW",
+      "base_priority": "LOW",
+      "final_priority": "LOW",
+      "reasoning": "Low-information barren with minimal identifiable features",
+      "override_reason": null,
+      "categories": [
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "tokyo_20260412T120000Z",
+    "image_path": "evals/candidates/images/tokyo_20260412T120000Z.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Clear urban tile with dense built environment and visible parkland; routine but informative metropolitan scene.",
+    "elapsed_s": 2.08,
+    "decision": {
+      "image_id": "tokyo_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a densely populated urban area with a mix of residential and commercial buildings. The cityscape is characterized by a grid-like pattern of streets and buildings, with a notable large park situated in the middle-right of the image.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area featuring standard development patterns, routine monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "military"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "long_beach_port_20260412T120000Z",
+    "image_path": "evals/candidates/images/long_beach_port_20260412T120000Z.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Dense port infrastructure is informative, but there is no visible hazard signal in this tile under the current hazard-triage policy.",
+    "elapsed_s": 2.01,
+    "decision": {
+      "image_id": "long_beach_port_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a harbor area with multiple ships docked at various ports. The harbor is surrounded by urban infrastructure, with buildings and roads visible in the background. The ships are of different sizes and are positioned at various points within the harbor.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Port area with ships, routine port monitoring",
+      "override_reason": null,
+      "categories": [
+        "infrastructure",
+        "maritime"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "chuquicamata_mine_20260412T120000Z",
+    "image_path": "evals/candidates/images/chuquicamata_mine_20260412T120000Z.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "LOW",
+    "priority_match": false,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Large open-pit mine is visually salient, but it should not be escalated above MEDIUM without visible hazard evidence.",
+    "elapsed_s": 2.27,
+    "decision": {
+      "image_id": "chuquicamata_mine_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth features a desert landscape with a small town situated in the middle-right section. The town is surrounded by a winding road that curves around the town and extends towards the top-right of the image. The terrain is characterized by a mix of sandy and rocky surfaces, with some areas showing signs of erosion or sedimentation.",
+      "priority": "LOW",
+      "base_priority": "LOW",
+      "final_priority": "LOW",
+      "reasoning": "Low-information arid barren with minimal identifiable features",
+      "override_reason": null,
+      "categories": [
+        "terrain",
+        "desert"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "jebel_ali_port_20260412T120000Z",
+    "image_path": "evals/candidates/images/jebel_ali_port_20260412T120000Z.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Major port activity is informative and worth review, but not a hazard on its own.",
+    "elapsed_s": 2.57,
+    "decision": {
+      "image_id": "jebel_ali_port_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a coastal area with a large ship docked at a port. The port is surrounded by a mix of industrial and commercial buildings, with a significant amount of shipping containers visible. The ship is positioned near the port, with its bow facing the port area. The port is located adjacent to a body of water, and there are several other ships visible in the vicinity.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Port area with ships, routine port monitoring",
+      "override_reason": null,
+      "categories": [
+        "infrastructure",
+        "maritime"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "escondida_mine_20260412T120000Z",
+    "image_path": "evals/candidates/images/escondida_mine_20260412T120000Z.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "LOW",
+    "priority_match": false,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "This mine tile is interesting and high-information, but it remains MEDIUM unless there is visible hazard or damage.",
+    "elapsed_s": 2.2,
+    "decision": {
+      "image_id": "escondida_mine_20260412T120000Z",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image provided is a high-resolution satellite view featuring a large area with distinct patterns and textures. There are multiple small circular structures scattered across the landscape, with one particularly noticeable on the right side of the image. The terrain exhibits a mix of earth tones and patterns, with some areas appearing more barren than others.",
+      "priority": "LOW",
+      "base_priority": "LOW",
+      "final_priority": "LOW",
+      "reasoning": "Low-information barren with minimal identifiable features",
+      "override_reason": null,
+      "categories": [
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "attica_wildfire_rgb",
+    "image_path": "evals/candidates/images/attica_wildfire_20230824T120000Z__rgb.png",
+    "expected_priority": "CRITICAL",
+    "predicted_priority": "MEDIUM",
+    "priority_match": false,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Dramatic burn scars and active fire aftermath across mountainous terrain near Athens. Clear wildfire damage.",
+    "elapsed_s": 2.44,
+    "decision": {
+      "image_id": "attica_wildfire_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth features a landscape with a small town and a large parking lot. The parking lot is located towards the top-right of the image, surrounded by a dense cluster of buildings. The surrounding area is characterized by a mix of green vegetation and brown terrain, with a few small patches of water visible.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with identifiable features, routine city monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "terrain",
+        "water"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "derna_flood_rgb",
+    "image_path": "evals/candidates/images/derna_flood_20230914T120000Z__rgb.png",
+    "expected_priority": "CRITICAL",
+    "predicted_priority": "MEDIUM",
+    "priority_match": false,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Catastrophic flood damage in Derna, Libya. Muddy brown water visible across urban area and coastline.",
+    "elapsed_s": 2.57,
+    "decision": {
+      "image_id": "derna_flood_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth features a coastal area with a mix of urban development and natural elements. The urban area is characterized by a dense collection of buildings, roads, and infrastructure. Surrounding the urban area, there are patches of greenery and bodies of water, with one notable body of water located towards the bottom right of the image.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with mixed development and natural features, standard monitoring without urgent indicators",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "water",
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "valencia_flood_rgb",
+    "image_path": "evals/candidates/images/valencia_flood_20241101T120000Z__rgb.png",
+    "expected_priority": "CRITICAL",
+    "predicted_priority": "SKIP",
+    "priority_match": false,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Flooded agricultural fields with standing water. Partial cloud cover but flooding clearly visible.",
+    "elapsed_s": 2.66,
+    "decision": {
+      "image_id": "valencia_flood_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth shows a large area with a mix of natural and developed landscapes. The dense cloud cover obscures much of the view, but a significant portion of the image is dominated by a large, irregularly shaped cloud formation. The cloud cover is dense and covers a large area, with the cloud edges appearing to be in the lower part of the image. There are no distinct features or landmarks that can be clearly identified due to the cloud cover.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Cloud cover obscures most of the image with no discernible features",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "lahaina_wildfire_rgb",
+    "image_path": "evals/candidates/images/lahaina_wildfire_20230810T120000Z__rgb.png",
+    "expected_priority": "HIGH",
+    "predicted_priority": "MEDIUM",
+    "priority_match": false,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Burn scar visible in Lahaina coastal area. Wildfire aftermath with brown/scorched patches near town.",
+    "elapsed_s": 2.97,
+    "decision": {
+      "image_id": "lahaina_wildfire_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth features a coastal area with a mix of urban development and natural landscapes. The coastline is visible on the right side of the image, with a road curving along its edge. The urban area is characterized by a dense collection of buildings, roads, and patches of greenery. The water body, which is the sea, is located on the left side of the image, with its blue color contrasting against the land.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with identifiable features, standard monitoring without urgent indicators",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "water",
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "tenerife_wildfire_rgb",
+    "image_path": "evals/candidates/images/tenerife_wildfire_20230819T120000Z__rgb.png",
+    "expected_priority": "HIGH",
+    "predicted_priority": "LOW",
+    "priority_match": false,
+    "prefilter_hit": false,
+    "ambiguous": false,
+    "notes": "Dark burned terrain on volcanic mountainside. Wildfire damage visible across forested slopes.",
+    "elapsed_s": 2.16,
+    "decision": {
+      "image_id": "tenerife_wildfire_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a landscape with a mix of vegetation and barren areas. There is a noticeable patch of green vegetation located in the top-left quadrant of the image. The barren areas are predominantly brown, indicating dry or barren land. The vegetation patch stands out against the otherwise barren terrain.",
+      "priority": "LOW",
+      "base_priority": "LOW",
+      "final_priority": "LOW",
+      "reasoning": "Low-information barren with minimal identifiable features",
+      "override_reason": null,
+      "categories": [
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "kelowna_wildfire_rgb",
+    "image_path": "evals/candidates/images/kelowna_wildfire_20230818T120000Z__rgb.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": true,
+    "notes": "Urban lakefront city. Fire damage not clearly visible at this capture \u2014 scene looks routine urban.",
+    "elapsed_s": 2.17,
+    "decision": {
+      "image_id": "kelowna_wildfire_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth features a coastal urban area with a bridge spanning a body of water. The bridge is located in the middle-left portion of the image, connecting two parts of the city. The surrounding area is densely populated with buildings, roads, and greenery, indicating a developed urban environment.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with bridge, routine city monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "water"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "chile_wildfire_rgb",
+    "image_path": "evals/candidates/images/chile_wildfire_20240205T120000Z__rgb.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": true,
+    "notes": "Coastal city (Valparaiso). Possible hillside damage but not obvious from this capture angle.",
+    "elapsed_s": 2.82,
+    "decision": {
+      "image_id": "chile_wildfire_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a coastal city with a mix of urban development and natural features. The city is situated along the coastline, with a prominent harbor area visible on the right side of the image. The harbor is characterized by a long pier extending into the water. The cityscape is densely packed with buildings, roads, and other infrastructure. There are also a few small boats visible in the water.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with harbor, routine city monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "water",
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "pakistan_flood_sindh_rgb",
+    "image_path": "evals/candidates/images/pakistan_flood_sindh_20220901T120000Z__rgb.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": true,
+    "notes": "Agricultural area in Sindh. Some water features visible but flooding not dramatically obvious.",
+    "elapsed_s": 2.13,
+    "decision": {
+      "image_id": "pakistan_flood_sindh_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a section of a landscape with a large body of water, a runway, and surrounding agricultural fields. The airport is located near the water body, with a visible runway extending from the airport towards the water.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Maritime infrastructure (airport) for routine port monitoring",
+      "override_reason": null,
+      "categories": [
+        "infrastructure",
+        "water",
+        "agriculture",
+        "maritime"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "tobago_spill_rgb",
+    "image_path": "evals/candidates/images/tobago_spill_20240210T120000Z__rgb.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "SKIP",
+    "priority_match": false,
+    "prefilter_hit": false,
+    "ambiguous": true,
+    "notes": "Coastal Tobago with partial clouds. Oil spill not clearly visible in RGB at this resolution.",
+    "elapsed_s": 2.66,
+    "decision": {
+      "image_id": "tobago_spill_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth features a coastal area with a mix of urban development and natural landscape. The urban area is characterized by a dense concentration of buildings, roads, and infrastructure. Surrounding the urban area, there is a body of water with varying shades of blue, indicating different depths and possibly different types of water bodies. The coastline is visible with a distinct separation between land and sea. Cloud formations are scattered across the image, with some areas showing dense cloud cover.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Cloud cover exceeds 80%, no usable data",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "turkey_hatay_rgb",
+    "image_path": "evals/candidates/images/turkey_hatay_landslide_20230210T120000Z__rgb.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": true,
+    "notes": "Urban area in Hatay post-earthquake. No obvious landslide visible \u2014 urban scene looks mostly intact.",
+    "elapsed_s": 2.41,
+    "decision": {
+      "image_id": "turkey_hatay_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth showcases a densely populated urban area with a mix of residential and commercial buildings. The streets are visible, and there is a noticeable contrast between the built environment and the surrounding natural landscape. The image captures a variety of colors, including shades of brown, green, and gray, indicating different types of terrain and infrastructure.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with mixed development, standard monitoring without urgent indicators",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "terrain"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "brazil_sao_sebastiao_rgb",
+    "image_path": "evals/candidates/images/brazil_sao_sebastiao_20230222T120000Z__rgb.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": true,
+    "notes": "Coastal town with steep terrain. Landslide scars may be present but not dramatically visible.",
+    "elapsed_s": 2.88,
+    "decision": {
+      "image_id": "brazil_sao_sebastiao_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The image sourced from GoogleEarth features a coastal area with a mix of urban development and natural landscape. The urban area is characterized by a dense collection of buildings, roads, and infrastructure, with a prominent coastline that curves along the right side of the image. The water body is a significant feature, extending from the top right to the bottom right of the image, with a distinct blue-green color.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with identifiable infrastructure, routine city monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "water"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "rio_grande_flood_rgb",
+    "image_path": "evals/candidates/images/rio_grande_flood_20240508T120000Z__rgb.png",
+    "expected_priority": "MEDIUM",
+    "predicted_priority": "MEDIUM",
+    "priority_match": true,
+    "prefilter_hit": false,
+    "ambiguous": true,
+    "notes": "Dense urban area. Flooding not obviously visible in this tile \u2014 may need different coordinates or date.",
+    "elapsed_s": 2.53,
+    "decision": {
+      "image_id": "rio_grande_flood_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "The high-resolution image from GoogleEarth shows a dense urban area with a variety of buildings and roads. The cityscape is characterized by tightly packed structures, with a mix of residential and commercial buildings. There are visible roads and pathways crisscrossing the area, indicating a well-developed infrastructure. The image also features some greenery, with patches of trees and vegetation scattered throughout the urban environment.",
+      "priority": "MEDIUM",
+      "base_priority": "MEDIUM",
+      "final_priority": "MEDIUM",
+      "reasoning": "Urban area with standard development patterns, routine monitoring",
+      "override_reason": null,
+      "categories": [
+        "urban",
+        "infrastructure",
+        "vegetation"
+      ],
+      "downlink_action": "TRANSMIT_THUMBNAIL",
+      "source": "simsat"
+    }
+  },
+  {
+    "id": "ventanilla_spill_rgb",
+    "image_path": "evals/candidates/images/ventanilla_spill_20220121T120000Z__rgb.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Almost entirely white \u2014 cloud covered. No ground or ocean surface visible.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "ventanilla_spill_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "niger_delta_spill_rgb",
+    "image_path": "evals/candidates/images/niger_delta_spill_20230601T120000Z__rgb.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Heavily cloud covered with no usable ground detail visible.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "niger_delta_spill_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  },
+  {
+    "id": "enga_landslide_rgb",
+    "image_path": "evals/candidates/images/enga_landslide_20240527T120000Z__rgb.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Mostly no-data (black) with only a thin strip of dark terrain visible at bottom edge.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "enga_landslide_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "override_reason": null,
+      "categories": [],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "categories": []
+    }
+  },
+  {
+    "id": "thessaly_flood_rgb",
+    "image_path": "evals/candidates/images/thessaly_flood_20230908T120000Z__rgb.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "Completely dark / no-data frame. No ground information visible.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "thessaly_flood_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "override_reason": null,
+      "categories": [],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image is too dark to extract useful information.",
+      "priority": "SKIP",
+      "reasoning": "Dark/underexposed image detected by pixel analysis \u2014 VLM skipped.",
+      "categories": []
+    }
+  },
+  {
+    "id": "india_joshimath_rgb",
+    "image_path": "evals/candidates/images/india_joshimath_20230115T120000Z__rgb.png",
+    "expected_priority": "SKIP",
+    "predicted_priority": "SKIP",
+    "priority_match": true,
+    "prefilter_hit": true,
+    "ambiguous": false,
+    "notes": "All white \u2014 snow/cloud covered mountain area. No ground features visible.",
+    "elapsed_s": 0.0,
+    "decision": {
+      "image_id": "india_joshimath_rgb",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "position": {
+        "lat": 0.0,
+        "lon": 0.0,
+        "alt": 0.0
+      },
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "base_priority": "SKIP",
+      "final_priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "override_reason": null,
+      "categories": [
+        "cloud_cover"
+      ],
+      "downlink_action": "TRANSMIT_SUMMARY_ONLY",
+      "source": "simsat"
+    },
+    "prefilter_result": {
+      "description": "Image dominated by cloud cover \u2014 no ground features visible.",
+      "priority": "SKIP",
+      "reasoning": "Heavy cloud cover detected by pixel analysis \u2014 VLM skipped to save compute.",
+      "categories": [
+        "cloud_cover"
+      ]
+    }
+  }
+]

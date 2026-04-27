@@ -23,23 +23,8 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
 
-# Our triage system prompt (same as src/triage/prompts.py)
-TRIAGE_SYSTEM_PROMPT = """\
-You are a satellite image triage system. Analyze the image and respond ONLY with a JSON object. No other text.
-
-Priority: CRITICAL (disasters, fires, floods), HIGH (deforestation, unusual activity, anomalies), MEDIUM (routine urban, agriculture), LOW (featureless desert, barren terrain), SKIP (heavy clouds >80%, empty ocean, image artifacts).
-
-If the image is mostly white/bright with no ground features visible, it is cloud-covered — mark SKIP.
-
-Examples:
-{"description": "Dense urban area with buildings and road network along a coastline", "priority": "MEDIUM", "reasoning": "Routine urban scene, no anomalies detected", "categories": ["urban", "infrastructure"]}
-{"description": "Image almost entirely covered by clouds, no ground features visible", "priority": "SKIP", "reasoning": "Cloud cover exceeds 80%, no usable data", "categories": ["cloud_cover"]}
-{"description": "Arid desert terrain with sand dunes and dry riverbeds", "priority": "LOW", "reasoning": "Featureless barren landscape with no activity", "categories": ["terrain", "desert"]}
-{"description": "Active wildfire with visible smoke plumes spreading over forested area", "priority": "CRITICAL", "reasoning": "Active fire threatening forested region, immediate alert needed", "categories": ["disaster", "fire", "vegetation"]}
-{"description": "Fresh clearing in dense forest with exposed soil and new access road", "priority": "HIGH", "reasoning": "Possible deforestation activity with new road construction", "categories": ["deforestation", "vegetation", "environmental_change"]}\
-"""
-
-TRIAGE_USER_PROMPT = "Triage this satellite image. Respond with JSON only."
+# Single source of truth — import from the inference module
+from src.triage.prompts import TRIAGE_SYSTEM_PROMPT, TRIAGE_USER_PROMPT
 
 # Keyword-based heuristic for assigning priority to VRSBench captions
 # (VRSBench doesn't have priority labels, so we infer them from content)
@@ -195,12 +180,8 @@ def _extract_caption(conversations) -> str | None:
     gpt_response = conversations[1].get("value", "").strip()
     if len(gpt_response) < 20:
         return None
-    # Strip VRSBench boilerplate prefix
-    boilerplate = "The image, sourced from GoogleEarth, "
-    if gpt_response.startswith(boilerplate):
-        gpt_response = gpt_response[len(boilerplate):]
-        gpt_response = gpt_response[0].upper() + gpt_response[1:] if gpt_response else gpt_response
-    return gpt_response
+    from training.scripts.clean_captions import clean_caption
+    return clean_caption(gpt_response)
 
 
 def _load_labels(labels_path: str) -> dict[int, dict]:

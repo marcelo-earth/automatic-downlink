@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>automatic-downlink — Ground Station</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
             --bg: #0a0e17;
@@ -32,112 +34,73 @@
             justify-content: space-between;
             align-items: center;
         }
-        .header h1 {
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-        .header .status {
-            font-size: 12px;
-            color: var(--text-dim);
-        }
+        .header h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
+        .header .status { font-size: 12px; color: var(--text-dim); }
         .header .status .dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #22c55e;
-            margin-right: 6px;
-            animation: pulse 2s infinite;
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+            background: #22c55e; margin-right: 6px; animation: pulse 2s infinite;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .grid {
             display: grid;
-            grid-template-columns: 300px 1fr;
+            grid-template-columns: 320px 1fr;
             min-height: calc(100vh - 57px);
         }
         .sidebar {
             border-right: 1px solid var(--border);
-            padding: 20px;
+            padding: 16px;
+            overflow-y: auto;
         }
         .stat-card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
         }
         .stat-card .label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-dim);
-            margin-bottom: 4px;
+            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-dim); margin-bottom: 4px;
         }
-        .stat-card .value {
-            font-size: 28px;
-            font-weight: 700;
-        }
+        .stat-card .value { font-size: 28px; font-weight: 700; }
         .stat-card .value.savings { color: #22c55e; }
-        .priority-bars {
-            margin-top: 16px;
+        #map {
+            height: 200px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
         }
-        .priority-bar {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 12px;
-        }
-        .priority-bar .bar-label {
-            width: 70px;
+        .sat-coords {
+            font-size: 11px;
             color: var(--text-dim);
+            margin-top: 6px;
+            text-align: center;
         }
+        .priority-bars { margin-top: 12px; }
+        .priority-bar { display: flex; align-items: center; margin-bottom: 6px; font-size: 12px; }
+        .priority-bar .bar-label { width: 65px; color: var(--text-dim); }
         .priority-bar .bar-track {
-            flex: 1;
-            height: 6px;
-            background: var(--border);
-            border-radius: 3px;
-            margin: 0 8px;
-            overflow: hidden;
+            flex: 1; height: 6px; background: var(--border);
+            border-radius: 3px; margin: 0 8px; overflow: hidden;
         }
-        .priority-bar .bar-fill {
-            height: 100%;
-            border-radius: 3px;
-            transition: width 0.5s;
-        }
-        .priority-bar .bar-count { width: 30px; text-align: right; }
-        .feed {
-            padding: 20px;
-            overflow-y: auto;
-        }
+        .priority-bar .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        .priority-bar .bar-count { width: 28px; text-align: right; }
+        .feed { padding: 20px; overflow-y: auto; }
         .feed-header {
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-dim);
-            margin-bottom: 16px;
+            font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-dim); margin-bottom: 16px;
         }
         .decision {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 14px 16px;
-            margin-bottom: 8px;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; padding: 14px 16px; margin-bottom: 8px;
+            display: flex; gap: 12px; align-items: flex-start;
+        }
+        .decision .thumb {
+            width: 80px; height: 80px; border-radius: 6px; object-fit: cover;
+            border: 1px solid var(--border); flex-shrink: 0;
         }
         .decision .badge {
-            font-size: 10px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 4px;
-            white-space: nowrap;
-            min-width: 65px;
-            text-align: center;
+            font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+            white-space: nowrap; min-width: 65px; text-align: center;
         }
         .badge.CRITICAL { background: var(--critical); color: white; }
         .badge.HIGH { background: var(--high); color: white; }
@@ -145,33 +108,20 @@
         .badge.LOW { background: var(--low); color: white; }
         .badge.SKIP { background: var(--skip); color: var(--text-dim); }
         .decision .content { flex: 1; }
-        .decision .desc {
-            font-size: 13px;
-            line-height: 1.4;
-            margin-bottom: 4px;
-        }
-        .decision .meta {
-            font-size: 11px;
-            color: var(--text-dim);
-        }
-        .decision .categories {
-            display: flex;
-            gap: 4px;
-            margin-top: 6px;
-            flex-wrap: wrap;
-        }
+        .decision .desc { font-size: 13px; line-height: 1.4; margin-bottom: 4px; }
+        .decision .meta { font-size: 11px; color: var(--text-dim); }
+        .decision .categories { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
         .decision .categories span {
-            font-size: 10px;
-            background: var(--border);
-            padding: 2px 6px;
-            border-radius: 3px;
-            color: var(--text-dim);
+            font-size: 10px; background: var(--border); padding: 2px 6px;
+            border-radius: 3px; color: var(--text-dim);
         }
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-dim);
+        .dark-tooltip {
+            background: var(--surface) !important; color: var(--text) !important;
+            border: 1px solid var(--border) !important; font-family: inherit;
+            font-size: 11px !important; border-radius: 4px !important;
         }
+        .dark-tooltip::before { border-top-color: var(--border) !important; }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
         .empty-state h2 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
         .empty-state p { font-size: 13px; }
     </style>
@@ -179,81 +129,176 @@
 <body>
     <div class="header">
         <h1>automatic-downlink <span style="color: var(--text-dim); font-weight: 400;">/ ground station</span></h1>
-        <div class="status"><span class="dot"></span>Monitoring orbit</div>
+        <div class="status"><span class="dot"></span><span id="status-text">Monitoring orbit</span></div>
     </div>
 
     <div class="grid">
         <div class="sidebar">
             <div class="stat-card">
+                <div class="label">Satellite Position</div>
+                <div id="map"></div>
+                <div class="sat-coords" id="sat-coords">Waiting for telemetry...</div>
+            </div>
+
+            <div class="stat-card">
                 <div class="label">Images Analyzed</div>
-                <div class="value">{{ stats.total_images }}</div>
+                <div class="value" id="stat-total">0</div>
             </div>
 
             <div class="stat-card">
                 <div class="label">Bandwidth Saved</div>
-                <div class="value savings">{{ stats.savings_percent }}%</div>
+                <div class="value savings" id="stat-savings">0%</div>
             </div>
 
             <div class="stat-card">
                 <div class="label">Alerts</div>
-                <div class="value" style="color: var(--critical)">{{ stats.critical_count }}</div>
+                <div class="value" style="color: var(--critical)" id="stat-critical">0</div>
                 <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">
-                    + {{ stats.high_count }} high priority
+                    + <span id="stat-high">0</span> high priority
                 </div>
             </div>
 
             <div class="stat-card">
                 <div class="label">Priority Distribution</div>
-                <div class="priority-bars">
-                    {% set total = stats.total_images if stats.total_images > 0 else 1 %}
-                    {% for level, color in [("CRITICAL", "#ef4444"), ("HIGH", "#f97316"), ("MEDIUM", "#eab308"), ("LOW", "#6b7280"), ("SKIP", "#374151")] %}
-                    {% set count = stats.by_priority.get(level, 0) %}
-                    <div class="priority-bar">
-                        <span class="bar-label">{{ level }}</span>
-                        <div class="bar-track">
-                            <div class="bar-fill" style="width: {{ (count / total * 100)|round }}%; background: {{ color }}"></div>
-                        </div>
-                        <span class="bar-count">{{ count }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
+                <div class="priority-bars" id="priority-bars"></div>
             </div>
         </div>
 
         <div class="feed">
             <div class="feed-header">Triage Feed</div>
-
-            {% if decisions %}
-                {% for d in decisions|reverse %}
-                <div class="decision">
-                    <span class="badge {{ d.priority }}">{{ d.priority }}</span>
-                    <div class="content">
-                        <div class="desc">{{ d.description }}</div>
-                        <div class="meta">
-                            {{ d.image_id }} &middot; {{ d.source }} &middot; {{ d.timestamp }}
-                        </div>
-                        {% if d.categories %}
-                        <div class="categories">
-                            {% for cat in d.categories %}
-                            <span>{{ cat }}</span>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
+            <div id="feed-content">
                 <div class="empty-state">
                     <h2>Waiting for satellite data</h2>
                     <p>Triage decisions will appear here as the satellite captures images.</p>
                 </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 
     <script>
-        // Auto-refresh every 5 seconds
-        setTimeout(() => location.reload(), 5000);
+        const map = L.map('map', {
+            center: [20, 0], zoom: 1, zoomControl: false,
+            attributionControl: false, dragging: false,
+            scrollWheelZoom: false, doubleClickZoom: false,
+        });
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 18
+        }).addTo(map);
+
+        const satIcon = L.divIcon({
+            html: '<div style="width:12px;height:12px;background:#3b82f6;border:2px solid #93c5fd;border-radius:50%;box-shadow:0 0 8px #3b82f6;"></div>',
+            iconSize: [12, 12], className: ''
+        });
+        const satMarker = L.marker([0, 0], { icon: satIcon }).addTo(map);
+        const trail = L.polyline([], { color: '#3b82f6', weight: 1.5, opacity: 0.4 }).addTo(map);
+        const trailPoints = [];
+
+        const PRIORITY_COLORS = {
+            CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308',
+            LOW: '#6b7280', SKIP: '#374151'
+        };
+
+        const decisionMarkers = L.layerGroup().addTo(map);
+        let markerCount = 0;
+
+        function makeDecisionIcon(priority) {
+            const color = PRIORITY_COLORS[priority] || '#6b7280';
+            return L.divIcon({
+                html: `<div style="width:8px;height:8px;background:${color};border:1px solid rgba(255,255,255,0.3);border-radius:50%;"></div>`,
+                iconSize: [8, 8], className: ''
+            });
+        }
+
+        async function updatePosition() {
+            try {
+                const r = await fetch('/api/position');
+                const pos = await r.json();
+                if (pos.live) {
+                    satMarker.setLatLng([pos.lat, pos.lon]);
+                    trailPoints.push([pos.lat, pos.lon]);
+                    if (trailPoints.length > 200) trailPoints.shift();
+                    trail.setLatLngs(trailPoints);
+                    document.getElementById('sat-coords').textContent =
+                        `${pos.lat.toFixed(2)}, ${pos.lon.toFixed(2)} — ${pos.alt.toFixed(0)} km`;
+                    document.getElementById('status-text').textContent = 'Tracking live orbit';
+                } else {
+                    document.getElementById('sat-coords').textContent = 'Demo mode — fixed locations';
+                    document.getElementById('status-text').textContent = 'Demo mode';
+                }
+            } catch(e) {}
+        }
+
+        async function updateFeed() {
+            try {
+                const [statsR, decisionsR] = await Promise.all([
+                    fetch('/api/stats'), fetch('/api/decisions?limit=50')
+                ]);
+                const stats = await statsR.json();
+                const decisions = await decisionsR.json();
+
+                document.getElementById('stat-total').textContent = stats.total_images;
+                document.getElementById('stat-savings').textContent = stats.savings_percent + '%';
+                document.getElementById('stat-critical').textContent = stats.critical_count;
+                document.getElementById('stat-high').textContent = stats.high_count;
+
+                const total = Math.max(stats.total_images, 1);
+                const barsHtml = ['CRITICAL','HIGH','MEDIUM','LOW','SKIP'].map(level => {
+                    const count = stats.by_priority[level] || 0;
+                    const pct = Math.round(count / total * 100);
+                    return `<div class="priority-bar">
+                        <span class="bar-label">${level}</span>
+                        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${PRIORITY_COLORS[level]}"></div></div>
+                        <span class="bar-count">${count}</span>
+                    </div>`;
+                }).join('');
+                document.getElementById('priority-bars').innerHTML = barsHtml;
+
+                if (decisions.length === 0) return;
+
+                if (decisions.length > markerCount) {
+                    for (let i = markerCount; i < decisions.length; i++) {
+                        const d = decisions[i];
+                        const m = L.marker([d.position.lat, d.position.lon], {
+                            icon: makeDecisionIcon(d.priority)
+                        });
+                        m.bindTooltip(`${d.priority} — ${d.description.slice(0, 60)}...`, {
+                            className: 'dark-tooltip'
+                        });
+                        decisionMarkers.addLayer(m);
+                    }
+                    markerCount = decisions.length;
+
+                    const allPoints = decisions.map(d => [d.position.lat, d.position.lon]);
+                    if (trailPoints.length > 0) allPoints.push(...trailPoints.slice(-10));
+                    if (allPoints.length > 1) {
+                        map.fitBounds(L.latLngBounds(allPoints).pad(0.2));
+                    }
+                }
+
+                const reversed = [...decisions].reverse();
+                const feedHtml = reversed.map(d => {
+                    const thumbHtml = d.image_b64
+                        ? `<img class="thumb" src="data:image/jpeg;base64,${d.image_b64}" alt="Satellite image">`
+                        : '';
+                    const cats = (d.categories || []).map(c => `<span>${c}</span>`).join('');
+                    return `<div class="decision">
+                        ${thumbHtml}
+                        <span class="badge ${d.priority}">${d.priority}</span>
+                        <div class="content">
+                            <div class="desc">${d.description}</div>
+                            <div class="meta">${d.image_id} &middot; ${d.source} &middot; ${d.position.lat.toFixed(2)}, ${d.position.lon.toFixed(2)}</div>
+                            ${cats ? `<div class="categories">${cats}</div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+                document.getElementById('feed-content').innerHTML = feedHtml;
+            } catch(e) {}
+        }
+
+        updatePosition();
+        updateFeed();
+        setInterval(updatePosition, 3000);
+        setInterval(updateFeed, 5000);
     </script>
 </body>
 </html>

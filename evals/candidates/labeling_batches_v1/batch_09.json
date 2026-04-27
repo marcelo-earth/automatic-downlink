@@ -1,0 +1,32 @@
+{
+  "batch_id": "batch_09",
+  "pairs": [
+    {
+      "candidate_group_id": "ventanilla_ts20220315T000000Z_o0",
+      "location_slug": "ventanilla",
+      "location_name": "Ventanilla, Peru",
+      "hazard_type": "oil_spill",
+      "lat": -11.849,
+      "lon": -77.17,
+      "fetch_timestamp": "2022-03-15T00:00:00Z",
+      "event_peak": "2022-01-21",
+      "event_window": "2022-01-15/2022-03-15",
+      "rgb_path": "evals/candidates/hazard_grid_v1/ventanilla_ts20220315T000000Z_o0__rgb.png",
+      "swir_path": "evals/candidates/hazard_grid_v1/ventanilla_ts20220315T000000Z_o0__swir.png"
+    },
+    {
+      "candidate_group_id": "ventanilla_ts20220315T000000Z_o1",
+      "location_slug": "ventanilla",
+      "location_name": "Ventanilla, Peru",
+      "hazard_type": "oil_spill",
+      "lat": -11.814,
+      "lon": -77.135,
+      "fetch_timestamp": "2022-03-15T00:00:00Z",
+      "event_peak": "2022-01-21",
+      "event_window": "2022-01-15/2022-03-15",
+      "rgb_path": "evals/candidates/hazard_grid_v1/ventanilla_ts20220315T000000Z_o1__rgb.png",
+      "swir_path": "evals/candidates/hazard_grid_v1/ventanilla_ts20220315T000000Z_o1__swir.png"
+    }
+  ],
+  "output_file": "evals/candidates/labels_v1/batch_09.jsonl"
+}

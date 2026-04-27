@@ -39,7 +39,9 @@ DEFAULT_MANIFEST = REPO_ROOT / "evals" / "sentinel_eval_v1.jsonl"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "evals" / "results"
 HF_CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
 SIMPLE_SYSTEM_PROMPT = """\
-You are a satellite image triage system. Analyze the image and respond ONLY with valid JSON.
+You are an onboard satellite hazard triage system. Analyze the image and respond ONLY with valid JSON.
+
+Hazard scope: wildfire, flood, oil spill, landslide.
 
 Return this schema and nothing else:
 {"description": "<1 sentence>", "priority": "<CRITICAL|HIGH|MEDIUM|LOW|SKIP>"}
@@ -47,7 +49,7 @@ Return this schema and nothing else:
 Priority guide:
 - SKIP: heavy clouds, no-data wedges, empty/obscured image
 - LOW: routine barren terrain, vegetation, or other low-information scene
-- MEDIUM: informative or unusual scene, but no confirmed hazard
+- MEDIUM: informative or anomalous scene but no confirmed hazard
 - HIGH: visible hazard aftermath, probable hazard, or elevated hazard risk
 - CRITICAL: active hazard such as wildfire, flood, landslide, or a clear large spill
 """

@@ -97,6 +97,18 @@ has now moved to **EXP 6**, which prioritizes:
 Benchmarking and experiment notes live under [`evals/`](evals) and
 [`EXP_6.md`](EXP_6.md).
 
+### Training direction after v5 post-mortem
+
+A `v5` pass that mixed VRSBench with 17 oversampled hand-labeled hazard images
+converged cleanly on training loss but scored `CRITICAL 0/3` and `HIGH 0/2` on
+the frozen real-domain eval — the model learned VRSBench caption style instead
+of hazard detection. Details in [`EXP_6.md`](EXP_6.md).
+
+The next training pass drops VRSBench, moves to RGB + SWIR dual-image inputs,
+uses frontier-model teacher labels on a programmatic grid of real Sentinel-2
+captures, does full fine-tune instead of LoRA, and splits train/test
+temporally to avoid Sentinel-2's 5-day revisit leaking into eval.
+
 ### Historical Training Reproduction
 
 **Option A — Kaggle (free, recommended):**

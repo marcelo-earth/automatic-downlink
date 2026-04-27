@@ -1,0 +1,12 @@
+{"location_slug":"lahaina","location_name":"Lahaina, Maui","lat":20.8787,"lon":-156.6825,"hazard_type":"wildfire","event_window":"2023-08-01/2023-08-31","event_peak":"2023-08-10"}
+{"location_slug":"kelowna","location_name":"Kelowna, BC","lat":49.886,"lon":-119.496,"hazard_type":"wildfire","event_window":"2023-08-01/2023-09-15","event_peak":"2023-08-18"}
+{"location_slug":"tenerife","location_name":"Tenerife, Canary Islands","lat":28.333,"lon":-16.559,"hazard_type":"wildfire","event_window":"2023-08-01/2023-09-15","event_peak":"2023-08-19"}
+{"location_slug":"valparaiso","location_name":"Valparaiso, Chile","lat":-33.036,"lon":-71.627,"hazard_type":"wildfire","event_window":"2024-01-20/2024-03-01","event_peak":"2024-02-05"}
+{"location_slug":"derna","location_name":"Derna, Libya","lat":32.767,"lon":22.637,"hazard_type":"flood","event_window":"2023-09-01/2023-10-15","event_peak":"2023-09-14"}
+{"location_slug":"valencia","location_name":"Valencia, Spain","lat":39.361,"lon":-0.404,"hazard_type":"flood","event_window":"2024-10-20/2024-11-30","event_peak":"2024-11-01"}
+{"location_slug":"rio_grande","location_name":"Rio Grande do Sul, Brazil","lat":-29.687,"lon":-51.130,"hazard_type":"flood","event_window":"2024-04-25/2024-06-10","event_peak":"2024-05-08"}
+{"location_slug":"thessaly","location_name":"Thessaly, Greece","lat":39.640,"lon":22.420,"hazard_type":"flood","event_window":"2023-09-01/2023-10-15","event_peak":"2023-09-08"}
+{"location_slug":"enga","location_name":"Enga Province, PNG","lat":-5.401,"lon":143.951,"hazard_type":"landslide","event_window":"2024-05-15/2024-06-30","event_peak":"2024-05-27"}
+{"location_slug":"sao_sebastiao","location_name":"Sao Sebastiao, Brazil","lat":-23.760,"lon":-45.410,"hazard_type":"landslide","event_window":"2023-02-15/2023-03-31","event_peak":"2023-02-22"}
+{"location_slug":"tobago","location_name":"Tobago coastline","lat":11.175,"lon":-60.720,"hazard_type":"oil_spill","event_window":"2024-02-01/2024-03-31","event_peak":"2024-02-10"}
+{"location_slug":"ventanilla","location_name":"Ventanilla, Peru","lat":-11.849,"lon":-77.170,"hazard_type":"oil_spill","event_window":"2022-01-15/2022-03-15","event_peak":"2022-01-21"}

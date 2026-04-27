@@ -1,0 +1,17 @@
+{"location_slug":"lahaina_wildfire","location_name":"Lahaina, Maui wildfire","lat":20.8787,"lon":-156.6825,"timestamp":"2023-08-10T12:00:00Z","hazard_type":"wildfire","event_name":"Maui wildfire Aug 2023"}
+{"location_slug":"attica_wildfire","location_name":"Attica, Greece wildfire","lat":38.131,"lon":23.941,"timestamp":"2023-08-24T12:00:00Z","hazard_type":"wildfire","event_name":"Attica wildfire Aug 2023"}
+{"location_slug":"kelowna_wildfire","location_name":"Kelowna, BC wildfire","lat":49.886,"lon":-119.496,"timestamp":"2023-08-18T12:00:00Z","hazard_type":"wildfire","event_name":"Canadian wildfires 2023"}
+{"location_slug":"tenerife_wildfire","location_name":"Tenerife wildfire","lat":28.333,"lon":-16.559,"timestamp":"2023-08-19T12:00:00Z","hazard_type":"wildfire","event_name":"Tenerife wildfire Aug 2023"}
+{"location_slug":"chile_wildfire","location_name":"Valparaiso wildfire","lat":-33.036,"lon":-71.627,"timestamp":"2024-02-05T12:00:00Z","hazard_type":"wildfire","event_name":"Chile wildfires Feb 2024"}
+{"location_slug":"rio_grande_flood","location_name":"Rio Grande do Sul flood","lat":-29.687,"lon":-51.130,"timestamp":"2024-05-08T12:00:00Z","hazard_type":"flood","event_name":"Rio Grande do Sul floods May 2024"}
+{"location_slug":"valencia_flood","location_name":"Valencia flood zone","lat":39.361,"lon":-0.404,"timestamp":"2024-11-01T12:00:00Z","hazard_type":"flood","event_name":"Valencia floods Oct 2024"}
+{"location_slug":"derna_flood","location_name":"Derna, Libya flood","lat":32.767,"lon":22.637,"timestamp":"2023-09-14T12:00:00Z","hazard_type":"flood","event_name":"Libya floods Sep 2023"}
+{"location_slug":"pakistan_flood_sindh","location_name":"Sindh, Pakistan flood","lat":26.245,"lon":68.250,"timestamp":"2022-09-01T12:00:00Z","hazard_type":"flood","event_name":"Pakistan floods 2022"}
+{"location_slug":"thessaly_flood","location_name":"Thessaly, Greece flood","lat":39.640,"lon":22.420,"timestamp":"2023-09-08T12:00:00Z","hazard_type":"flood","event_name":"Storm Daniel, Greece Sep 2023"}
+{"location_slug":"enga_landslide","location_name":"Enga Province landslide","lat":-5.401,"lon":143.951,"timestamp":"2024-05-27T12:00:00Z","hazard_type":"landslide","event_name":"Papua New Guinea landslide May 2024"}
+{"location_slug":"turkey_hatay_landslide","location_name":"Hatay, Turkey post-earthquake","lat":36.210,"lon":36.160,"timestamp":"2023-02-10T12:00:00Z","hazard_type":"landslide","event_name":"Turkey earthquake aftermath Feb 2023"}
+{"location_slug":"brazil_sao_sebastiao","location_name":"Sao Sebastiao, Brazil landslide","lat":-23.760,"lon":-45.410,"timestamp":"2023-02-22T12:00:00Z","hazard_type":"landslide","event_name":"Sao Sebastiao landslide Feb 2023"}
+{"location_slug":"india_joshimath","location_name":"Joshimath, India subsidence","lat":30.557,"lon":79.565,"timestamp":"2023-01-15T12:00:00Z","hazard_type":"landslide","event_name":"Joshimath subsidence Jan 2023"}
+{"location_slug":"ventanilla_spill","location_name":"Ventanilla coastal spill","lat":-11.849,"lon":-77.170,"timestamp":"2022-01-21T12:00:00Z","hazard_type":"oil_spill","event_name":"Peru coastal spill Jan 2022"}
+{"location_slug":"tobago_spill","location_name":"Tobago oil spill","lat":11.175,"lon":-60.720,"timestamp":"2024-02-10T12:00:00Z","hazard_type":"oil_spill","event_name":"Trinidad and Tobago spill Feb 2024"}
+{"location_slug":"niger_delta_spill","location_name":"Niger Delta chronic spill zone","lat":4.770,"lon":7.010,"timestamp":"2023-06-01T12:00:00Z","hazard_type":"oil_spill","event_name":"Niger Delta chronic spills"}

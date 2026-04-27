@@ -16,11 +16,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 MODEL_ID = os.environ.get("MODEL_ID", "marcelo-earth/LFM2.5-VL-450M-satellite-triage")
+MODEL_REVISION = os.environ.get("MODEL_REVISION", "4e5353b0")
 BASE_MODEL_ID = "LiquidAI/LFM2.5-VL-450M"
 
 # Recommended generation params from model card
 GENERATION_KWARGS = {
-    "max_new_tokens": 512,
+    "max_new_tokens": 256,
     "temperature": 0.1,
     "do_sample": True,
     "repetition_penalty": 1.05,
@@ -60,6 +61,7 @@ class TriageModel:
         dtype = _dtype_for_device(self.device)
         self.model = AutoModelForImageTextToText.from_pretrained(
             self.model_id,
+            revision=MODEL_REVISION,
             device_map=self.device if self.device == "cuda" else None,
             dtype=dtype,
         )

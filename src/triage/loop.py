@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import logging
 import random
 import time
 from datetime import datetime, timezone
+from io import BytesIO
+
+from PIL import Image
 
 from src.simsat.client import SimSatClient
 from src.triage.engine import TriageEngine
@@ -109,7 +113,9 @@ def _fetch_and_triage(
                 position={"lat": position.lat, "lon": position.lon, "alt": position.alt},
                 source="sentinel-2",
             )
-            return decision.model_dump(mode="json"), demo_index
+            d = decision.model_dump(mode="json")
+            d["image_b64"] = _image_to_b64(result.image)
+            return d, demo_index
 
         logger.info("No Sentinel-2 image at live position, falling back to demo location.")
 
@@ -135,4 +141,14 @@ def _fetch_and_triage(
         position={"lat": lat, "lon": lon, "alt": 550.0},
         source="sentinel-2",
     )
-    return decision.model_dump(mode="json"), next_index
+    d = decision.model_dump(mode="json")
+    d["image_b64"] = _image_to_b64(result.image)
+    return d, next_index
+
+
+def _image_to_b64(image: Image.Image, size: int = 128) -> str:
+    thumb = image.copy()
+    thumb.thumbnail((size, size))
+    buf = BytesIO()
+    thumb.save(buf, format="JPEG", quality=70)
+    return base64.b64encode(buf.getvalue()).decode()
