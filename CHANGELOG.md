@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-04-30
+
+### Exp 6c — CRITICAL class fix via upsampling + retrain
+
+#### Problem diagnosed
+- v6b eval: 6/11 (55%) overall accuracy. CRITICAL recall = 0/4 (model predicted MEDIUM for all four Valencia 2024 flood tiles).
+- Root cause: only 2 CRITICAL examples in 49-sample training set (4.1%). Model learned to default to MEDIUM for uncertain scenes.
+
+#### Fix: CRITICAL upsampling in `prepare_exp6_dataset.py`
+- Added 5× repeat of CRITICAL training rows after the temporal split.
+- Result: 10 CRITICAL out of 57 training samples (17.5%) — proportional to real-world hazard importance.
+- Explored leap-finetune source (`/leap-finetune/src/`) to confirm no built-in class weighting or upsampling exists in the YAML config layer; dataset-level duplication is the correct approach.
+
+#### Dataset regenerated + uploaded
+- Re-ran `PYTHONPATH=. python3 training/scripts/prepare_exp6_dataset.py`
+- Re-ran `training/scripts/upload_exp6_to_modal.py` (overwrites existing JSONL on volume, images unchanged)
+
+#### v6c retrain launched
+- Same config as v6b: `training/configs/triage_vlm_sft_v6_modal.yaml`
+- Full fine-tune (no LoRA), H100, 5 epochs, LR 2e-5, `vision_encoder_lr_multiplier: 1.0`
+- Tracking: Trackio at `marcelo-earth/automatic-downlink-trackio`
+
 ## 2026-04-22
 
 ### EXP 5/6 pivot — hazard-focused training data + v5 launch

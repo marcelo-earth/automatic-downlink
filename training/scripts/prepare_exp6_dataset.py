@@ -113,6 +113,20 @@ def main() -> None:
         else:
             eval_samples.append(sample)
 
+    # Upsample CRITICAL in training set — only 2 natural examples (4%) causes
+    # the model to default to MEDIUM for everything uncertain. 5× repeat brings
+    # CRITICAL to ~17% of the training set, matching its real-world importance.
+    CRITICAL_UPSAMPLE = 5
+    critical_train = [s for s in train_samples if s["priority"] == "CRITICAL"]
+    train_samples = train_samples + critical_train * (CRITICAL_UPSAMPLE - 1)
+
+    upsample_dist = Counter(s["priority"] for s in train_samples)
+    print(f"\nTrain after CRITICAL upsample (×{CRITICAL_UPSAMPLE}):")
+    for p in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+        c = upsample_dist.get(p, 0)
+        pct = c / len(train_samples) * 100 if train_samples else 0
+        print(f"  {p:10s}: {c:4d} ({pct:5.1f}%)")
+
     # Write JSONL (strip metadata keys before writing — keep only messages)
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     for path, samples in [
