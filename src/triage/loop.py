@@ -20,19 +20,20 @@ logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 30
 
-# Interesting Earth locations for demo/fallback when simulation isn't running.
-# Each tuple: (name, lat, lon) — covers diverse terrain types.
+# Real disaster sites — burn scars, flood damage, and landslide debris are
+# visible in Sentinel-2 imagery months/years after the event.
+# Two "normal" scenes at the end provide contrast (should produce SKIP/LOW).
 DEMO_LOCATIONS = [
-    ("Lausanne, Switzerland", 46.52, 6.63),
-    ("Amazon rainforest", -3.47, -62.21),
-    ("Sahara desert", 24.00, 2.00),
-    ("Lima, Peru", -12.04, -77.03),
-    ("Tokyo, Japan", 35.68, 139.69),
-    ("Cape Town, South Africa", -33.92, 18.42),
-    ("Greenland ice sheet", 72.00, -40.00),
-    ("Australian outback", -25.27, 134.21),
-    ("Nile delta, Egypt", 30.87, 31.32),
-    ("Borneo rainforest", 1.50, 110.00),
+    ("Eaton Fire burn scar, Los Angeles CA (Jan 2025)", 34.18, -118.03),
+    ("Palisades Fire burn scar, Los Angeles CA (Jan 2025)", 34.07, -118.55),
+    ("Lahaina wildfire burn scar, Maui HI (Aug 2023)", 20.87, -156.68),
+    ("Valencia DANA flood plain, Spain (Nov 2024)", 39.47, -0.38),
+    ("Derna flash flood debris, Libya (Sep 2023)", 32.76, 22.64),
+    ("Kelowna wildfire burn scar, BC Canada (Aug 2023)", 49.89, -119.49),
+    ("Enga Province landslide, Papua New Guinea (May 2024)", -5.40, 143.00),
+    ("Alexandroupoli wildfire, Greece (Aug 2023)", 41.10, 25.90),
+    ("Open Pacific Ocean (contrast — expect SKIP)", -10.00, -140.00),
+    ("Greenland ice sheet (contrast — expect SKIP)", 72.00, -40.00),
 ]
 
 
@@ -105,6 +106,7 @@ def _fetch_and_triage(
             position.lat, position.lon, position.alt,
         )
         result = client.get_sentinel_current()
+        swir_result = client.get_sentinel_current(spectral_bands=["swir16", "nir08", "red"])
         if result.image is not None:
             timestamp = datetime.now(timezone.utc).isoformat()
             decision = engine.analyze(
@@ -112,6 +114,7 @@ def _fetch_and_triage(
                 timestamp=timestamp,
                 position={"lat": position.lat, "lon": position.lon, "alt": position.alt},
                 source="sentinel-2",
+                swir_image=swir_result.image if swir_result else None,
             )
             d = decision.model_dump(mode="json")
             d["image_b64"] = _image_to_b64(result.image)
@@ -124,10 +127,10 @@ def _fetch_and_triage(
     next_index = demo_index + 1
     logger.info("Demo mode: fetching %s (lat=%.2f, lon=%.2f)", name, lat, lon)
 
-    result = client.get_sentinel_historical(
-        lon=lon,
-        lat=lat,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+    now = datetime.now(timezone.utc).isoformat()
+    result = client.get_sentinel_historical(lon=lon, lat=lat, timestamp=now)
+    swir_result = client.get_sentinel_historical(
+        lon=lon, lat=lat, timestamp=now, spectral_bands=["swir16", "nir08", "red"]
     )
 
     if result.image is None:
@@ -140,6 +143,7 @@ def _fetch_and_triage(
         timestamp=timestamp,
         position={"lat": lat, "lon": lon, "alt": 550.0},
         source="sentinel-2",
+        swir_image=swir_result.image if swir_result and swir_result.image else None,
     )
     d = decision.model_dump(mode="json")
     d["image_b64"] = _image_to_b64(result.image)

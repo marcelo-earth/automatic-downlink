@@ -22,14 +22,12 @@ hazard, or hazard aftermath.
 
 - Active wildfire with visible smoke plume
 - Active flooding or clear inundation over land
-- Large clear oil slick on water under favorable viewing conditions
 - Fresh landslide with obvious debris and slope failure
 
 ### `HIGH`
 
 - Burn scar or wildfire aftermath with clear hazard relevance
 - Receding flood or saturated floodplain with visible residual impact
-- Coastal contamination or ambiguous slick under favorable conditions
 - Fresh landslide scar or unstable slope with strong visual evidence
 
 ### `MEDIUM`
@@ -64,7 +62,6 @@ The current hazard scope is:
 
 - Wildfire
 - Flood
-- Oil spill, but only as "detectable under favorable conditions"
 - Landslide
 
 RGB is the current baseline view, but Sentinel-2 companion views such as SWIR and NIR

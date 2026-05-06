@@ -3,205 +3,202 @@
 ## System Overview
 
 ```
-                                    SIMULATED SATELLITE (SimSat)
-                    ┌─────────────────────────────────────────────────┐
-                    │                                                 │
-                    │   ┌──────────┐    ┌──────────────────────────┐  │
-                    │   │ SimSat   │    │   Triage Engine          │  │
-                    │   │ Orbit    │───>│                          │  │
-                    │   │ Simulator│    │  ┌────────────────────┐  │  │
-                    │   └──────────┘    │  │ LFM2.5-VL-450M    │  │  │
-                    │                   │  │ (fine-tuned)       │  │  │
-                    │   ┌──────────┐    │  └────────┬───────────┘  │  │
-                    │   │ Sentinel │───>│           │              │  │
-                    │   │ API      │    │  ┌────────▼───────────┐  │  │
-                    │   └──────────┘    │  │ Priority Classifier│  │  │
-                    │                   │  │ (prompt-based)     │  │  │
-                    │   ┌──────────┐    │  └────────┬───────────┘  │  │
-                    │   │ Mapbox   │───>│           │              │  │
-                    │   │ API      │    └───────────┼──────────────┘  │
-                    │   └──────────┘                │                 │
-                    └──────────────────────────────┼─────────────────┘
-                                                   │
-                              ┌─────────────────────┤
-                              │                     │
-                    ┌─────────▼──────┐    ┌────────▼────────┐
-                    │  Text Summary  │    │  Priority Queue  │
-                    │  (ALL images)  │    │  (HIGH+ images)  │
-                    │  ~1KB each     │    │  full resolution │
-                    └─────────┬──────┘    └────────┬────────┘
-                              │                     │
-                              └──────────┬──────────┘
-                                         │
-                              SIMULATED DOWNLINK
-                                         │
-                              ┌──────────▼──────────┐
-                              │    Ground Station   │
-                              │    Dashboard        │
-                              │                     │
-                              │  - Triage feed      │
-                              │  - Bandwidth stats  │
-                              │  - Image viewer     │
-                              └─────────────────────┘
+                              SIMULATED SATELLITE (SimSat)
+              ┌────────────────────────────────────────────────────────────┐
+              │                                                            │
+              │  ┌──────────────┐   RGB image   ┌──────────────────────┐  │
+              │  │  SimSat      │──────────────>│                      │  │
+              │  │  Orbit       │               │    Triage Engine     │  │
+              │  │  Simulator   │  SWIR image   │                      │  │
+              │  │              │──────────────>│  LFM2.5-VL-450M      │  │
+              │  │  (Sentinel-2 │               │  (fine-tuned v6d)    │  │
+              │  │   STAC/AWS)  │               │                      │  │
+              │  └──────────────┘               └──────────┬───────────┘  │
+              │                                            │              │
+              │                            CRITICAL / HIGH / MEDIUM /     │
+              │                            LOW / SKIP + reasoning         │
+              │                                            │              │
+              └────────────────────────────────────────────┼─────────────┘
+                                                           │
+                                          SIMULATED DOWNLINK (HTTP)
+                                                           │
+                                   ┌───────────────────────▼──────────────┐
+                                   │        Ground Station Dashboard       │
+                                   │                                       │
+                                   │  • Live triage feed                   │
+                                   │  • Bandwidth savings gauge            │
+                                   │  • Priority distribution              │
+                                   │  • Full image viewer (HIGH+)          │
+                                   │  • Satellite position                 │
+                                   └───────────────────────────────────────┘
 ```
 
-## Components
+## The Problem automatic-downlink Solves
 
-### 1. SimSat Integration Layer
-**Purpose:** Fetch satellite imagery from SimSat API
-**Input:** Satellite position (lat, lon, alt, timestamp)
-**Output:** Raw satellite images (Sentinel-2 multispectral, Mapbox RGB)
-**Tech:** Python, requests, SimSat Docker container
+A low-Earth-orbit satellite captures an image roughly every 30 seconds. With a
+5 Mbps downlink budget, transmitting every frame at full resolution is
+impossible. Current systems either send everything (expensive) or rely on
+rigid threshold rules (miss critical events).
 
-Endpoints used:
-- `GET /data/current/position` — satellite position
-- `GET /data/current/image/sentinel` — current Sentinel-2 image
-- `GET /data/current/image/mapbox` — current Mapbox image
-- `GET /data/image/sentinel` — historical Sentinel-2 image
+**automatic-downlink** runs an on-board VLM to read each image and decide:
+> "Does this image show something that the ground needs to see right now?"
 
-### 2. Triage Engine
-**Purpose:** Analyze images and decide what to downlink
-**Input:** Raw satellite image (PNG)
-**Output:** JSON with description, priority, and reasoning
+Only CRITICAL/HIGH images are downlinked at full resolution. Everything else
+sends a 1-sentence text summary (~0.5 KB vs ~500 KB per image). Typical
+bandwidth savings: **97–99%**.
+
+## Hazard Scope
+
+The model is trained and prompted to detect three mission-critical hazards:
+
+| Hazard | SWIR signature | Why it matters |
+|--------|---------------|----------------|
+| **Wildfire** | Active fire = bright red pixels | Hours matter for evacuation |
+| **Flood** | Dark blue (water absorption) | Infrastructure damage, relief routing |
+| **Landslide** | Exposed soil, debris fans | Blocks roads, burial risk |
+
+## Model: LFM2.5-VL-450M (Fine-tuned)
+
+### Base model
+
+LFM2.5-VL-450M — Liquid AI's 450M-parameter vision-language model, chosen
+because the hackathon track requires an LFM2.5-VL model and its small size
+makes it viable for on-board satellite inference.
+
+### Fine-tuning journey
+
+| Version | Strategy | CRITICAL recall |
+|---------|-----------|-----------------|
+| v6 base | Full fine-tune, raw dataset | 0% (MEDIUM collapse) |
+| v6b | Same, 3× CRITICAL upsample | 0% (bias too strong) |
+| v6c | 3× CRITICAL + MEDIUM cut | 0% (still collapsed) |
+| **v6d** | 5× CRITICAL + MEDIUM cut to 6 | **75% (3/4)** |
+
+Training infrastructure: Modal H100 serverless GPU, `leap-finetune` framework,
+full fine-tune (no LoRA — vision tower included), 5 epochs, LR 2e-5.
+
+Weights published to HuggingFace:
+`marcelo-earth/LFM2.5-VL-450M-satellite-triage-v6`
+
+### Dual-image inference
+
+Each inference pass receives **two images**:
+
+1. **RGB** — natural color Sentinel-2 composite (`[red, green, blue]`)
+2. **SWIR false-color** — `[swir16, nir08, red]` — makes fire and water
+   spectrally distinct even under smoke or haze
+
+The model is fine-tuned on RGB+SWIR pairs, so it can reason across both
+channels simultaneously in a single forward pass.
+
+### Output schema
 
 ```json
 {
   "image_id": "IMG_4821",
   "timestamp": "2026-04-15T12:34:56Z",
   "position": {"lat": -12.05, "lon": -77.04, "alt": 791.3},
-  "description": "Urban area with visible flooding in eastern quadrant. Multiple roads submerged. Residential structures partially inundated.",
+  "description": "Urban area with visible flooding in eastern quadrant. Multiple roads submerged.",
   "priority": "CRITICAL",
   "reasoning": "Active flooding affecting populated area. Time-sensitive for disaster response.",
-  "categories": ["disaster", "flooding", "urban"],
-  "downlink_recommendation": "TRANSMIT_IMAGE",
-  "estimated_tokens": 47,
-  "estimated_image_size_kb": 512
+  "downlink_recommendation": "TRANSMIT_IMAGE"
 }
 ```
 
-**Tech:** LFM2.5-VL-450M (fine-tuned), transformers library
+## Priority Levels
 
-#### Triage Levels
+| Level | Meaning | Downlink Action |
+|-------|---------|----------------|
+| **CRITICAL** | Active hazard, immediate threat to life | Full image + metadata |
+| **HIGH** | Significant event, time-sensitive | Full image + metadata |
+| **MEDIUM** | Notable change, worth monitoring | Thumbnail + metadata |
+| **LOW** | Minimal interest | Text summary only |
+| **SKIP** | Clouds, open ocean, no content | Text summary only |
 
-| Level | Criteria | Downlink Action |
-|-------|----------|----------------|
-| CRITICAL | Active disasters, immediate threats | Image + full metadata |
-| HIGH | Significant changes, notable activity | Image + full metadata |
-| MEDIUM | Moderate interest, routine changes | Thumbnail + metadata |
-| LOW | Minimal interest but some content | Text summary only |
-| SKIP | Clouds, empty ocean, no content | Text summary only |
-
-### 3. Bandwidth Simulator
-**Purpose:** Calculate and display bandwidth savings
-**Input:** Triage decisions for a batch of images
-**Output:** Statistics comparing naive vs smart downlink
-
-Metrics:
-- Total images captured
-- Images by priority level
-- Data transmitted (smart) vs data that would have been transmitted (naive)
-- Bandwidth savings percentage
-- Critical alerts latency
-
-### 4. Ground Station Dashboard
-**Purpose:** Visualize triage decisions for the demo
-**Input:** Triage engine output stream
-**Output:** Web UI showing real-time triage feed
-
-Components:
-- Live triage feed (scrolling list of decisions)
-- Priority distribution chart
-- Bandwidth savings gauge
-- Image viewer for high-priority images
-- Satellite position map
-
-**Tech:** TBD (simple web UI — could be Streamlit, Next.js, or plain HTML)
-
-### 5. Docker Packaging
-**Purpose:** One-command setup for judges
+## Docker Services
 
 ```
 docker compose up
 ```
 
-Services:
-- `simsat` — SimSat simulator (from their Docker setup)
-- `triage` — Triage engine with LFM2.5-VL-450M
-- `dashboard` — Ground station UI
+Starts three services:
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| `simsat-dashboard` | 8000 | SimSat orbit simulator + image server |
+| `simsat-api` | 9005 | SimSat REST API (Sentinel-2 + Mapbox imagery) |
+| `triage-dashboard` | 8080 | Triage engine + ground station UI |
+
+### Triage loop
+
+Every 30 seconds (configurable via `TRIAGE_INTERVAL`):
+1. Fetch current satellite position from SimSat
+2. Fetch RGB image and SWIR false-color composite for that position
+3. Run dual-image inference on LFM2.5-VL-450M
+4. Pre-filter clouds (skip if >90% white pixels)
+5. Post output to dashboard via server-sent events (SSE)
 
 ## Data Flow
 
-1. SimSat simulates satellite orbit, advancing position over time
-2. At each position, Triage Engine fetches the current satellite image
-3. Image is passed to LFM2.5-VL-450M with triage system prompt
-4. Model generates description + priority classification
-5. Result is sent to Ground Station Dashboard
-6. Dashboard shows triage decisions and calculates bandwidth stats
-7. Only HIGH+ priority images are "downlinked" (displayed in full)
-8. SKIP/LOW images show only the text summary
-
-## Model Pipeline
-
 ```
-                    ┌──────────────┐
-                    │ System Prompt│
-                    │ (triage      │
-                    │  instructions│
-                    │  + priority  │
-                    │  levels)     │
-                    └──────┬───────┘
-                           │
-┌──────────┐    ┌──────────▼───────────┐    ┌──────────────────┐
-│ Satellite│───>│  LFM2.5-VL-450M     │───>│ JSON Output      │
-│ Image    │    │  (fine-tuned on      │    │ {description,    │
-│ (PNG)    │    │   VRSBench satellite │    │  priority,       │
-│          │    │   captioning)        │    │  reasoning,      │
-└──────────┘    └──────────────────────┘    │  categories}     │
-                                           └──────────────────┘
+SimSat Orbit → current position (lat/lon/alt)
+     │
+     ├─ GET /data/current/image/sentinel?bands=red,green,blue  → RGB
+     └─ GET /data/current/image/sentinel?bands=swir16,nir08,red → SWIR
+                    │
+                    ▼
+         LFM2.5-VL-450M (v6d)
+         [system: hazard triage + SWIR legend]
+         [user: RGB image + SWIR image + prompt]
+                    │
+                    ▼
+         {priority, description, reasoning}
+                    │
+              ┌─────┴──────┐
+              │             │
+           CRITICAL/HIGH   MEDIUM/LOW/SKIP
+           TRANSMIT_IMAGE  TRANSMIT_SUMMARY_ONLY
 ```
 
-## Deployment Considerations (Satellite Target)
-
-For actual OmniSat deployment (post-hackathon / if we win credits):
+## Deployment Target (OmniSat)
 
 | Constraint | Value | How We Handle It |
 |-----------|-------|-----------------|
-| GPU | NVIDIA Orin 16GB | 450M model = ~1GB in bf16, fits easily |
-| GPU time | 5 hours | At ~0.5s/image, that's ~36,000 images |
-| Upload | 5MB | Model weights pre-loaded, only upload config |
-| Download | 10MB | Text summaries (~1KB each) + few critical images |
-| Storage | 1GB | Model + image buffer + results |
-| Runtime | Docker | Already containerized |
+| GPU | NVIDIA Orin 16 GB | 450M model ≈ 900 MB fp32, fits with headroom |
+| Inference latency | ~2s / image pair (GPU) | Well within 30s orbit cadence |
+| Downlink budget | 5 MB / pass | Text summaries ≈ 0.5 KB; full image ≈ 500 KB |
+| Storage | 1 GB | Model weights pre-loaded in Docker image |
+| Runtime | Docker | Already containerized, one-command start |
 
-## File Structure (Planned)
+## Repository Layout
 
 ```
 automatic-downlink/
-  PRD.md
-  RISKS.md
-  CHANGELOG.md
-  ARCHITECTURE.md
-  CLAUDE.md
-  README.md
-  docker-compose.yml
   src/
     triage/
-      engine.py          # Main triage pipeline
-      model.py           # LFM2.5-VL-450M inference wrapper
-      prompts.py         # System prompts for triage
-      schemas.py         # Output JSON schemas
+      engine.py       — triage pipeline (cloud pre-filter, dual-image routing)
+      model.py        — LFM2.5-VL-450M wrapper (generate / generate_dual)
+      prompts.py      — system + user prompts for triage (default / disaster / dual)
+      schemas.py      — TriageResult dataclass + priority enum
+      loop.py         — 30s polling loop, SimSat fetch, SWIR companion fetch
     simsat/
-      client.py          # SimSat API client
+      client.py       — SimSat REST API client
     dashboard/
-      app.py             # Ground station UI
+      app.py          — FastAPI app: SSE feed, /api/stats, static UI
   training/
+    data/
+      exp6_train.jsonl        — base training set (RGB+SWIR pairs)
+      exp6d_train.jsonl       — rebalanced set (5× CRITICAL, MEDIUM cut)
     configs/
-      satellite_triage.yaml  # leap-finetune config
+      triage_vlm_sft_v6d_modal.yaml  — leap-finetune config
     scripts/
-      prepare_data.py        # Dataset preparation
-  tests/
-    test_triage.py
-    test_simsat_client.py
+      build_exp6d_train.py    — class rebalancing script
+      push_v6d_to_hub.py      — push inference files to HuggingFace
+  scripts/
+    evaluate_exp6_on_modal.py — Modal eval harness
+    labeling_prompt.md        — GPT-4V labeling instructions
+  EXP_6.md            — experiment log (all v6 runs, evals, decisions)
+  CHANGELOG.md        — daily session log
   Dockerfile
-  requirements.txt
+  docker-compose.yml
 ```

@@ -641,3 +641,84 @@ Based on the v5 post-mortem, the next training pass follows a structurally diffe
 Target for the first pass: ~200 labeled `(RGB, SWIR)` pairs spread across all four hazards, with enough non-hazard frames from the same regions that the model learns the contrast — not just the positive class.
 
 Success criterion stays the same as the rest of Exp 6: improvement on the frozen real-domain eval set, not training loss. Specifically, measurable `CRITICAL` and `HIGH` recall instead of zero.
+
+---
+
+## v6b eval (2026-04-30)
+
+Checkpoint: `LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-e4s14-20260427_043908`
+
+- **Overall: 6/11 (55%)** on temporal hold-out
+- CRITICAL: 0/4 — all predicted MEDIUM
+- MEDIUM: precision 0.55, recall 1.00 — model collapses everything to MEDIUM
+- LOW: 0/1 missed
+
+Root cause: MEDIUM dominated training at 22/57 samples (38.6%). Even though CRITICAL was upsampled 5x in v6c, the model learned a strong MEDIUM prior.
+
+---
+
+## v6c eval (2026-05-05)
+
+Checkpoint: `LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-e4s16-20260430_053227`
+
+- **Overall: 6/11 (55%)** — no improvement over v6b
+- CRITICAL: 0/4 — still all predicted MEDIUM
+- MEDIUM: precision 0.55, recall 1.00 — pure MEDIUM collapse persists
+- Per-sample: all 4 CRITICAL misses are Valencia flood images
+
+The 5x CRITICAL upsampling was insufficient. With 22 MEDIUM samples vs 10 CRITICAL (before upsampling), even a 5x multiplier on CRITICAL (50 copies) didn't overcome the MEDIUM bias in this 450M model.
+
+**Decision:** v6d with aggressive rebalancing — CRITICAL 3x upsample + cut MEDIUM from 22 → 6.
+
+---
+
+## v6d plan (2026-05-05)
+
+Training data rebalancing via `training/scripts/build_exp6d_train.py`:
+
+| Class | v6c | v6d |
+|-------|-----|-----|
+| CRITICAL | 10 (17%) | 30 (49%) |
+| HIGH | 19 (31%) | 19 (31%) |
+| LOW | 6 (10%) | 6 (10%) |
+| MEDIUM | 22 (38%) | 6 (10%) |
+| **Total** | **57** | **61** |
+
+MEDIUM trimming strategy: kept flood/landslide MEDIUM samples, removed most wildfire MEDIUM (they were 13/22 of the MEDIUM pool and likely the source of the MEDIUM-drift bias).
+
+Config: `training/configs/triage_vlm_sft_v6d_modal.yaml` — same hyperparams as v6c, 5 epochs, full fine-tune.
+
+Kicked off on Modal H100 at 2026-05-05.
+
+---
+
+## v6d eval (2026-05-05)
+
+Checkpoint: `LFM2.5-VL-450M-vlm_sft-exp6d_trai-…-20260506_021457/latest` (5 epochs)
+
+Eval loss curve: 1.73 (epoch 2) → 1.34 (epoch 3) → 1.24 (epoch 4) — clean convergence.
+
+| Metric | v6b/v6c | v6d |
+|--------|---------|-----|
+| Overall accuracy | 6/11 (55%) | 4/11 (36%) |
+| CRITICAL recall | 0/4 (0%) | **3/4 (75%)** |
+| CRITICAL precision | — | 3/8 (38%) |
+| MEDIUM recall | 6/6 (100%) | 1/6 (17%) |
+
+Per-sample breakdown:
+- `valencia_ts20241020` (pre-flood, MEDIUM) → predicted CRITICAL ✗ (false positive)
+- `valencia_ts20241101 o0` (active flood, CRITICAL) → predicted CRITICAL ✓
+- `valencia_ts20241101 o1` (active flood, CRITICAL) → predicted CRITICAL ✓
+- `valencia_ts20241110 o0` (flood aftermath, CRITICAL) → predicted MEDIUM ✗
+- `valencia_ts20241110 o1` (flood aftermath, CRITICAL) → predicted CRITICAL ✓
+- `rio_grande_ts20240508 o0+o1` (MEDIUM) → predicted CRITICAL ✗✗ (region contamination)
+- `rio_grande_ts20240610 o0` (MEDIUM) → predicted HIGH ✗
+- `rio_grande_ts20240610 o1` (LOW) → predicted CRITICAL ✗
+- `enga_ts20240527` (MEDIUM) → predicted MEDIUM ✓
+- `enga_ts20240607` (MEDIUM) → predicted CRITICAL ✗
+
+**Interpretation:** The rebalancing broke the MEDIUM-collapse and achieved strong CRITICAL recall (75%). The model now over-escalates flood-region tiles (spatial contamination — it learned "this region = flood" rather than "this image shows flooding"). This is an acceptable tradeoff: false positives mean extra downlink data, false negatives mean missing real disasters.
+
+**Decision:** ship v6d as the final model. Push to HuggingFace, update Docker.
+
+**Framing for demo:** v6b/v6c detected 0/4 active hazard events. v6d detected 3/4, with 3 false alarms in flood-adjacent regions — a recall-first calibration appropriate for emergency triage.

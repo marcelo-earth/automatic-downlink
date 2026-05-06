@@ -1,5 +1,90 @@
 # Changelog
 
+## 2026-05-06
+
+### Docker smoke test passed, ARCHITECTURE.md rewritten for demo
+
+#### Docker smoke test
+
+- Cleared ghost container state (`docker system prune -f`) that was blocking `docker compose up`.
+- All 3 services started successfully:
+  - `simsat-dashboard` (:8000) — healthy
+  - `simsat-api` (:9005) — up
+  - `triage-dashboard` (:8080) — up
+- LFM2.5-VL-450M v6d loaded on CPU in ~34 seconds (350 weight shards).
+- First inference ran immediately: `IMG_0144FE30 → SKIP` (correct — cloudy image).
+- `GET /` → HTTP 200. `GET /api/stats` → valid JSON `{"total_images":1,"SKIP":1,"savings_percent":99.8}`.
+- **Smoke test: PASS.** `docker compose up` works end-to-end.
+
+#### ARCHITECTURE.md rewritten
+
+- Replaced stale "TBD web UI" content with accurate current-state description.
+- Added: dual-image pipeline diagram, fine-tuning progression table (v6→v6d), hazard scope table with SWIR signatures, Docker service table, data flow diagram, OmniSat deployment constraints.
+- ARCHITECTURE.md now serves as the demo narrative document for judges.
+
+## 2026-05-05
+
+### Scope change, v6c eval, v6d retrain, dual-image pipeline wired
+
+#### Scope: oil spill removed
+
+- Removed oil spill from hazard scope — no clean positive eval examples existed (both oil spill candidates were cloud-blown SKIP), and only 9 training samples.
+- Updated `PRIORITY_POLICY.md`, `DETECTION_CAPABILITIES.md`, `src/triage/prompts.py`, `scripts/labeling_prompt.md`, `README.md`.
+- Removed `MARITIME_MODE_SYSTEM_PROMPT` and `maritime` prompt profile entirely.
+- Hazard scope is now: **wildfire, flood, landslide**.
+
+#### v6c eval results
+
+- Checkpoint: `LFM2.5-VL-450M-vlm_sft-exp6_train-…-20260430_053227` (e4s16)
+- **Overall: 6/11 (55%)** — no improvement over v6b.
+- **CRITICAL: 0/4** — all four Valencia flood tiles predicted MEDIUM.
+- MEDIUM recall 1.0 — model collapsed to MEDIUM for every non-trivial scene.
+- Root cause: 22 MEDIUM samples (38.6%) dominated training despite 5x CRITICAL upsampling. The 450M model defaulted to MEDIUM as its safe prediction.
+
+#### v6d: CRITICAL-dominant rebalancing
+
+- Built `training/data/exp6d_train.jsonl` via `training/scripts/build_exp6d_train.py`:
+  - CRITICAL: 10 → 30 (3x upsample)
+  - HIGH: 19 (unchanged)
+  - LOW: 6 (unchanged)
+  - MEDIUM: 22 → 6 (cut wildfire-MEDIUM which made up 13/22)
+  - Total: 57 → 61 samples, CRITICAL share 17% → 49%
+- Config: `training/configs/triage_vlm_sft_v6d_modal.yaml` (same hyperparams, 5 epochs)
+- Kicked off on Modal H100, run timestamp `20260506_021457`.
+
+#### Dual-image (RGB + SWIR) pipeline wired into inference
+
+- `src/triage/model.py`: added `generate_dual(rgb, swir, …)` method alongside existing `generate()`.
+- `src/triage/engine.py`: `analyze()` now accepts optional `swir_image`; uses `TRIAGE_DUAL_SYSTEM_PROMPT` when SWIR is present, single-image prompt otherwise.
+- `src/triage/loop.py`: fetches SWIR companion (`["swir16","nir08","red"]`) alongside RGB for both live and demo modes.
+- Previously the fine-tuned model (trained on dual images) was receiving only one image at inference — this mismatch is now fixed.
+
+#### v6d eval results
+
+- **CRITICAL recall: 3/4 (75%)** — first time model detects active hazard events.
+- Overall accuracy: 4/11 (36%) — dropped because model now over-escalates flood-region tiles.
+- MEDIUM recall: 1/6 — model is recall-first (appropriate for disaster triage).
+- Per-sample: correctly identified 2 active Valencia floods (Nov 1) and 1 flood aftermath (Nov 10). Missed one aftermath tile. False positives on pre-flood and flood-region non-flooded tiles.
+
+#### v6d pushed to HuggingFace
+
+- `marcelo-earth/LFM2.5-VL-450M-satellite-triage-v6`
+- Inference files only (1.03GB model.safetensors + configs) — optimizer states excluded.
+- `Dockerfile` updated to download v6 model at build time.
+- `src/triage/model.py` updated: default `MODEL_ID` → v6 repo, no pinned revision.
+
+#### Dual-image inference wired
+
+- `src/triage/model.py`: added `generate_dual()` for RGB+SWIR pair.
+- `src/triage/engine.py`: `analyze()` accepts optional `swir_image`, routes to dual path.
+- `src/triage/loop.py`: fetches SWIR companion alongside RGB for both live and demo modes.
+
+#### HF token updated
+
+- Old token (read-only, explaining why trackio never wrote data) replaced.
+- Modal secret `huggingface-secret` updated.
+- `.env` updated.
+
 ## 2026-04-30
 
 ### Exp 6c — CRITICAL class fix via upsampling + retrain

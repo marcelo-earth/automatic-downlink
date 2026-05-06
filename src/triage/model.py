@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-MODEL_ID = os.environ.get("MODEL_ID", "marcelo-earth/LFM2.5-VL-450M-satellite-triage")
-MODEL_REVISION = os.environ.get("MODEL_REVISION", "4e5353b0")
+MODEL_ID = os.environ.get("MODEL_ID", "marcelo-earth/LFM2.5-VL-450M-satellite-triage-v6")
+MODEL_REVISION = os.environ.get("MODEL_REVISION", None)  # use latest commit
 BASE_MODEL_ID = "LiquidAI/LFM2.5-VL-450M"
 
 # Recommended generation params from model card
@@ -59,12 +59,10 @@ class TriageModel:
         logger.info("Loading model %s on %s...", self.model_id, self.device)
 
         dtype = _dtype_for_device(self.device)
-        self.model = AutoModelForImageTextToText.from_pretrained(
-            self.model_id,
-            revision=MODEL_REVISION,
-            device_map=self.device if self.device == "cuda" else None,
-            dtype=dtype,
-        )
+        kwargs = dict(device_map=self.device if self.device == "cuda" else None, dtype=dtype)
+        if MODEL_REVISION:
+            kwargs["revision"] = MODEL_REVISION
+        self.model = AutoModelForImageTextToText.from_pretrained(self.model_id, **kwargs)
         if self.device != "cuda":
             self.model = self.model.to(self.device)
 
@@ -72,16 +70,7 @@ class TriageModel:
         logger.info("Model loaded on %s (%s).", self.device, dtype)
 
     def generate(self, image: Image.Image, system_prompt: str, user_prompt: str) -> str:
-        """Run inference on a single image with system + user prompt.
-
-        Args:
-            image: PIL Image to analyze.
-            system_prompt: System instructions (triage rules).
-            user_prompt: User query about the image.
-
-        Returns:
-            Model's text response.
-        """
+        """Run inference on a single image with system + user prompt."""
         if self.model is None or self.processor is None:
             raise RuntimeError("Model not loaded. Call load() first.")
 
@@ -95,6 +84,36 @@ class TriageModel:
                 ],
             },
         ]
+        return self._run_conversation(conversation)
+
+    def generate_dual(
+        self,
+        rgb_image: Image.Image,
+        swir_image: Image.Image,
+        system_prompt: str,
+        user_prompt: str,
+    ) -> str:
+        """Run inference on an RGB + SWIR image pair (dual-image model input)."""
+        if self.model is None or self.processor is None:
+            raise RuntimeError("Model not loaded. Call load() first.")
+
+        conversation = [
+            {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": rgb_image},
+                    {"type": "image", "image": swir_image},
+                    {"type": "text", "text": user_prompt},
+                ],
+            },
+        ]
+        return self._run_conversation(conversation)
+
+    def _run_conversation(self, conversation: list[dict]) -> str:
+        """Shared inference path for single- and dual-image conversations."""
+        if self.model is None or self.processor is None:
+            raise RuntimeError("Model not loaded. Call load() first.")
 
         inputs = self.processor.apply_chat_template(
             conversation,
@@ -102,7 +121,7 @@ class TriageModel:
             return_tensors="pt",
             return_dict=True,
             tokenize=True,
-        ).to(self.model.device)
+        ).to(self.model.device if self.device == "cuda" else self.device)
 
         with torch.inference_mode():
             output_ids = self.model.generate(**inputs, **GENERATION_KWARGS)

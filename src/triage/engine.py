@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from src.triage.model import TriageModel
-from src.triage.prompts import PROMPT_PROFILES, TRIAGE_USER_PROMPT
+from src.triage.prompts import PROMPT_PROFILES, TRIAGE_DUAL_SYSTEM_PROMPT, TRIAGE_DUAL_USER_PROMPT, TRIAGE_USER_PROMPT
 from src.triage.schemas import (
     BandwidthStats,
     DownlinkAction,
@@ -244,23 +244,17 @@ class TriageEngine:
 
     def analyze(
         self,
-        image: Image.Image,
+        image: "Image.Image",
         timestamp: str,
         position: dict[str, float],
         source: str = "sentinel",
         image_id: str | None = None,
+        swir_image: "Image.Image | None" = None,
     ) -> TriageDecision:
-        """Analyze a single satellite image and produce a triage decision.
+        """Analyze a satellite image and produce a triage decision.
 
-        Args:
-            image: PIL Image from SimSat.
-            timestamp: ISO-8601 capture timestamp.
-            position: dict with lat, lon, alt.
-            source: "sentinel" or "mapbox".
-            image_id: Optional identifier. Auto-generated if not provided.
-
-        Returns:
-            TriageDecision with priority, description, and downlink action.
+        When swir_image is provided the dual-image prompt is used, which
+        matches the training setup for v6d+ checkpoints.
         """
         image_id = image_id or f"IMG_{uuid.uuid4().hex[:8].upper()}"
         signals = self._image_signals(image)
@@ -273,11 +267,19 @@ class TriageEngine:
             base_priority = Priority(parsed.get("priority", "MEDIUM"))
             final_priority = base_priority
         else:
-            raw_output = self.model.generate(
-                image=image,
-                system_prompt=self.system_prompt,
-                user_prompt=TRIAGE_USER_PROMPT,
-            )
+            if swir_image is not None:
+                raw_output = self.model.generate_dual(
+                    rgb_image=image,
+                    swir_image=swir_image,
+                    system_prompt=TRIAGE_DUAL_SYSTEM_PROMPT,
+                    user_prompt=TRIAGE_DUAL_USER_PROMPT,
+                )
+            else:
+                raw_output = self.model.generate(
+                    image=image,
+                    system_prompt=self.system_prompt,
+                    user_prompt=TRIAGE_USER_PROMPT,
+                )
             parsed = self._parse_model_output(raw_output)
             base_priority = Priority(parsed.get("priority", "MEDIUM"))
             if self.use_decision_layer:

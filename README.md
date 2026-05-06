@@ -70,7 +70,7 @@ The triage engine will start polling SimSat for satellite images and analyzing t
 │  │ Rejects junk → describes scene → assigns        │ │
 │  │ hazard priority → chooses downlink action        │ │
 │  └─────────────────────────────────────────────────┘ │
-│  Prompt profiles: default | disaster | maritime      │
+│  Prompt profiles: default | disaster                 │
 └──────────────────────────┬───────────────────────────┘
                            │
 ┌──────────────────────────▼───────────────────────────┐
@@ -140,7 +140,6 @@ The current inference stack supports multiple mission profiles via prompt engine
 |---------|----------|-------------------|
 | `default` | General hazard triage | Standard hazard policy |
 | `disaster` | Land hazard response | Lower threshold for visible wildfire/flood/landslide evidence |
-| `maritime` | Coastal or ocean hazard triage | Focus on spills, coastal contamination, and maritime hazard context |
 
 Set via environment variable: `TRIAGE_PROFILE=disaster`
 
@@ -151,7 +150,6 @@ Current scope is intentionally narrow and demo-defensible:
 - wildfire
 - flood
 - landslide
-- oil spill, but only **under favorable conditions**
 
 The capability analysis is documented in
 [`DETECTION_CAPABILITIES.md`](DETECTION_CAPABILITIES.md).
@@ -204,7 +202,7 @@ evals/
 |----------|----------|-------------|
 | `MAPBOX_ACCESS_TOKEN` | Yes | For SimSat satellite imagery |
 | `HF_TOKEN` | Yes (build) | Hugging Face token for model download |
-| `TRIAGE_PROFILE` | No | `default`, `disaster`, or `maritime` |
+| `TRIAGE_PROFILE` | No | `default` or `disaster` |
 | `POLL_INTERVAL` | No | Seconds between triage runs (default: 30) |
 | `MODEL_ID` | No | Override model (default: fine-tuned model) |
 

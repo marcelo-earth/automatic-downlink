@@ -12,10 +12,11 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir ".[dashboard]"
 
 # Pre-download model weights during build (avoids ~5min wait on first run)
+# v6d: CRITICAL-dominant fine-tune — 75% CRITICAL recall on held-out eval
 ARG HF_TOKEN=""
 RUN python -c "\
 from huggingface_hub import snapshot_download; \
-snapshot_download('marcelo-earth/LFM2.5-VL-450M-satellite-triage', revision='4e5353b0', token='${HF_TOKEN}' or None); \
+snapshot_download('marcelo-earth/LFM2.5-VL-450M-satellite-triage-v6', token='${HF_TOKEN}' or None); \
 snapshot_download('LiquidAI/LFM2.5-VL-450M', ignore_patterns=['*.safetensors'], token='${HF_TOKEN}' or None)"
 
 # Copy source

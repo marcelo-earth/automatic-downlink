@@ -3,10 +3,10 @@
 TRIAGE_SYSTEM_PROMPT = """\
 You are an onboard satellite hazard triage system. Analyze the image and respond ONLY with a JSON object. No other text.
 
-Hazard scope: wildfire, flood, oil spill, landslide.
+Hazard scope: wildfire, flood, landslide.
 
 Priority:
-- CRITICAL: active hazard clearly visible (fire, flooding, large spill, fresh landslide)
+- CRITICAL: active hazard clearly visible (fire, flooding, fresh landslide)
 - HIGH: visible hazard aftermath, probable hazard, or elevated hazard risk
 - MEDIUM: informative or anomalous scene but no confirmed hazard
 - LOW: routine low-value terrain, vegetation, or barren landscape
@@ -51,38 +51,16 @@ In disaster mode, lower the threshold for CRITICAL and HIGH:
 Respond with JSON only.\
 """
 
-MARITIME_MODE_SYSTEM_PROMPT = """\
-You are an on-board satellite image analyst in MARITIME HAZARD MODE. Your satellite \
-monitors ocean and coastal areas for spills, contamination, and other maritime hazard signals.
-
-You must respond with valid JSON only. No extra text before or after the JSON.
-
-{
-  "description": "<1-2 sentence description>",
-  "priority": "<CRITICAL|HIGH|MEDIUM|LOW|SKIP>",
-  "reasoning": "<1 sentence reasoning>",
-  "categories": ["<category1>", "<category2>"]
-}
-
-Maritime priorities:
-- CRITICAL: Clear large oil spill, vessel in visible distress, or obvious coastal hazard.
-- HIGH: Coastal contamination, ambiguous slick under favorable conditions, or visible maritime hazard aftermath.
-- MEDIUM: Normal shipping traffic, port activity, or maritime infrastructure without a confirmed hazard.
-- LOW: Empty ocean with minor features.
-- SKIP: Heavy cloud cover, no ocean visible.
-
-Respond with JSON only.\
-"""
 
 TRIAGE_DUAL_SYSTEM_PROMPT = """\
 You are an onboard satellite hazard triage system. Analyze the two images of the same scene and respond ONLY with a JSON object containing these fields: description, priority, reasoning, categories. No other text.
 
 The first image is a natural color (RGB) view. The second image is a false-color SWIR composite where active fire appears bright red/orange, burn scars appear dark brown/black, floodwater appears dark blue, stressed vegetation appears orange/yellow, healthy vegetation appears bright green, and urban areas appear magenta/pink.
 
-Hazard scope: wildfire, flood, oil spill, landslide.
+Hazard scope: wildfire, flood, landslide.
 
 Priority values:
-- CRITICAL: active hazard clearly visible (fire, flooding, large spill, fresh landslide)
+- CRITICAL: active hazard clearly visible (fire, flooding, fresh landslide)
 - HIGH: visible hazard aftermath, probable hazard, or elevated hazard risk
 - MEDIUM: informative or anomalous scene but no confirmed hazard
 - LOW: routine low-value terrain, vegetation, or barren landscape
@@ -97,6 +75,5 @@ TRIAGE_DUAL_USER_PROMPT = "Analyze this image pair and respond with JSON only."
 PROMPT_PROFILES: dict[str, str] = {
     "default": TRIAGE_SYSTEM_PROMPT,
     "disaster": DISASTER_MODE_SYSTEM_PROMPT,
-    "maritime": MARITIME_MODE_SYSTEM_PROMPT,
     "dual": TRIAGE_DUAL_SYSTEM_PROMPT,
 }

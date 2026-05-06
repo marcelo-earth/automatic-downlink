@@ -17,9 +17,9 @@ from pathlib import Path
 import modal
 
 VOLUME_NAME = "satellite-vlm"
-_RUN = "LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-20260427_043908"
-_CKPT = "LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-e4s14-20260427_043908"
-CHECKPOINT_DIR = f"/satellite-vlm/{_RUN}/{_CKPT}"
+_RUN = "LFM2.5-VL-450M-vlm_sft-exp6d_trai-all-lr2em05-w0p2-no_lora-20260506_021457"
+_CKPT = "latest"  # use the latest checkpoint saved by the trainer
+CHECKPOINT_DIR = f"/satellite-vlm/{_RUN}/{_CKPT}" if _CKPT != "latest" else f"/satellite-vlm/{_RUN}/latest"
 EVAL_JSONL = "/satellite-vlm/data/exp6_eval.jsonl"
 IMAGE_ROOT = "/satellite-vlm"
 BASE_MODEL_ID = "LiquidAI/LFM2.5-VL-450M"
@@ -29,10 +29,10 @@ You are an onboard satellite hazard triage system. Analyze the two images of the
 
 The first image is a natural color (RGB) view. The second image is a false-color SWIR composite where active fire appears bright red/orange, burn scars appear dark brown/black, floodwater appears dark blue, stressed vegetation appears orange/yellow, healthy vegetation appears bright green, and urban areas appear magenta/pink.
 
-Hazard scope: wildfire, flood, oil spill, landslide.
+Hazard scope: wildfire, flood, landslide.
 
 Priority values:
-- CRITICAL: active hazard clearly visible (fire, flooding, large spill, fresh landslide)
+- CRITICAL: active hazard clearly visible (fire, flooding, fresh landslide)
 - HIGH: visible hazard aftermath, probable hazard, or elevated hazard risk
 - MEDIUM: informative or anomalous scene but no confirmed hazard
 - LOW: routine low-value terrain, vegetation, or barren landscape

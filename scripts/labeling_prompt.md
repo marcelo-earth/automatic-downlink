@@ -19,8 +19,8 @@ Your job: for each pair, output a single JSON object with the priority and a sho
 
 Use these priorities exactly:
 
-- **CRITICAL**: active hazard clearly visible (fire glow in SWIR, widespread floodwater, large clear oil slick, fresh landslide scar)
-- **HIGH**: visible hazard aftermath, probable hazard, or elevated hazard risk (burn scars, residual flooding, fresh slope failures, stressed vegetation patterns, thin slick under favorable conditions)
+- **CRITICAL**: active hazard clearly visible (fire glow in SWIR, widespread floodwater, fresh landslide scar)
+- **HIGH**: visible hazard aftermath, probable hazard, or elevated hazard risk (burn scars, residual flooding, fresh slope failures, stressed vegetation patterns)
 - **MEDIUM**: informative or anomalous scene but no confirmed hazard. Urban scenes, agriculture, ports, mines, unusual terrain — all MEDIUM unless you can point to hazard evidence.
 - **LOW**: routine low-value terrain, uniform vegetation, or barren landscape with no anomaly
 - **SKIP**: heavy clouds obscuring the ground, no-data wedges (large black regions), empty/obscured image, image artifacts, nighttime or capture errors

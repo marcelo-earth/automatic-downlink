@@ -34,12 +34,11 @@ See [`PRIORITY_POLICY.md`](PRIORITY_POLICY.md) for the full policy.
 
 ## Hazard Scope
 
-The current onboard triage scope targets four hazard families:
+The current onboard triage scope targets three hazard families:
 
 1. wildfire
 2. flood
-3. oil spill, but only under favorable conditions
-4. landslide
+3. landslide
 
 ## What We Detect
 
@@ -70,23 +69,7 @@ terrain, or strong residual flood evidence = `HIGH`.
 **Band note:** flood is another strong candidate for RGB + SWIR or NIR companion views,
 because water / land separation improves outside RGB.
 
-### 3. Oil Spill
-
-**Visual signature:** dark slick or contamination pattern on water or along the coast.
-
-**Why it is weaker:** in single-pass RGB, a slick can be confused with shadow,
-sunglint effects, sediment, dark water, or other natural surface patterns.
-
-**Claim we can defend:** oil spill is **detectable under favorable conditions**, not
-yet a strong universal capability claim.
-
-**Priority mapping:** large clear slick under favorable conditions = `CRITICAL`.
-Residual sheen or coastal contamination pattern under favorable conditions = `HIGH`.
-
-**Band note:** extra bands may help somewhat, but this remains the most ambiguous of the
-current hazard targets.
-
-### 4. Landslide
+### 3. Landslide
 
 **Visual signature:** exposed soil scar on vegetated slope, debris fan, disturbed slope
 geometry, or fresh slope failure context.
@@ -100,17 +83,17 @@ vegetation and persist well beyond the triggering event.
 **Ambiguity note:** old scars and exposed earth can look similar, so temporal ambiguity
 remains unless the visual evidence is strong.
 
-## Why These Four
+## Why These Three
 
-| Criterion | Wildfire | Flood | Oil Spill | Landslide |
-|-----------|----------|-------|-----------|-----------|
-| Detectable in RGB alone? | Often | Often | Sometimes | Often when fresh |
-| Improved by extra bands? | Yes | Yes | Maybe | Sometimes |
-| Persists long enough for revisit? | Yes | Yes | Often | Yes |
-| Has public event examples? | Yes | Yes | Yes | Yes |
-| Hazard domain | Land | Land | Maritime | Land |
+| Criterion | Wildfire | Flood | Landslide |
+|-----------|----------|-------|-----------|
+| Detectable in RGB alone? | Often | Often | Often when fresh |
+| Improved by extra bands? | Yes | Yes | Sometimes |
+| Persists long enough for revisit? | Yes | Yes | Yes |
+| Has public event examples? | Yes | Yes | Yes |
+| Hazard domain | Land | Land | Land |
 
-Together they cover fire, water, sea, and earth while remaining narrow enough to defend
+Together they cover fire, water, and slope failure while remaining narrow enough to defend
 in a hackathon demo.
 
 ## Training Direction
@@ -134,4 +117,4 @@ These are out of scope or weakly supported right now:
 - **generic temporal change detection** such as deforestation or urban growth from a single image
 - **sub-pixel phenomena** such as individual vehicles or small boats
 - **atmospheric composition** such as gas leaks or chemical plumes
-- **reliable oil-spill detection under all conditions**
+- **oil spill or maritime contamination**

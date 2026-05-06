@@ -1,0 +1,35 @@
+project_name: "automatic-downlink-triage"
+model_name: "LFM2.5-VL-450M"
+training_type: "vlm_sft"
+
+# Exp 6d: rebalanced training set — CRITICAL dominates (30/61 = 49%).
+# MEDIUM cut from 22 → 6 to break the MEDIUM-collapse pattern seen in v6b/v6c.
+# Full fine-tune so the vision tower learns SWIR hazard semantics.
+
+dataset:
+  path: "/satellite-vlm/data/exp6d_train.jsonl"
+  type: "vlm_sft"
+  limit: null
+  test_size: 0.1
+  image_root: "/satellite-vlm"
+
+training_config:
+  extends: "DEFAULT_VLM_SFT"
+  num_train_epochs: 5
+  per_device_train_batch_size: 2
+  learning_rate: 2e-5
+  vision_encoder_lr_multiplier: 1.0
+  tracker: "trackio"
+  trackio_space_id: "marcelo-earth/automatic-downlink-trackio"
+
+peft_config:
+  extends: "DEFAULT_VLM_LORA"
+  use_peft: false
+
+modal:
+  app_name: "automatic-downlink"
+  gpu: "H100:1"
+  timeout: 14400
+  output_volume: "satellite-vlm"
+  output_dir: "/satellite-vlm"
+  detach: false
