@@ -147,6 +147,7 @@ def _fetch_and_triage(
     )
     d = decision.model_dump(mode="json")
     d["image_b64"] = _image_to_b64(result.image)
+    d["location_name"] = name
     return d, next_index
 
 

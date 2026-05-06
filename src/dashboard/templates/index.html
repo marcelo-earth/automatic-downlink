@@ -222,8 +222,16 @@
                         `${pos.lat.toFixed(2)}, ${pos.lon.toFixed(2)} — ${pos.alt.toFixed(0)} km`;
                     document.getElementById('status-text').textContent = 'Tracking live orbit';
                 } else {
-                    document.getElementById('sat-coords').textContent = 'Demo mode — fixed locations';
                     document.getElementById('status-text').textContent = 'Demo mode';
+                    // Show last analyzed location in sidebar
+                    const coords = document.getElementById('sat-coords');
+                    const dec = await fetch('/api/decisions?limit=1').then(r=>r.json()).catch(()=>[]);
+                    if (dec.length && dec[0].location_name) {
+                        coords.textContent = dec[0].location_name;
+                        coords.style.color = 'var(--text)';
+                    } else {
+                        coords.textContent = 'Demo mode — cycling disaster sites';
+                    }
                 }
             } catch(e) {}
         }
@@ -261,7 +269,8 @@
                         const m = L.marker([d.position.lat, d.position.lon], {
                             icon: makeDecisionIcon(d.priority)
                         });
-                        m.bindTooltip(`${d.priority} — ${d.description.slice(0, 60)}...`, {
+                        const locLabel = d.location_name ? `${d.location_name}\n` : '';
+                        m.bindTooltip(`${d.priority} — ${locLabel}${d.description.slice(0, 60)}...`, {
                             className: 'dark-tooltip'
                         });
                         decisionMarkers.addLayer(m);
@@ -281,12 +290,15 @@
                         ? `<img class="thumb" src="data:image/jpeg;base64,${d.image_b64}" alt="Satellite image">`
                         : '';
                     const cats = (d.categories || []).map(c => `<span>${c}</span>`).join('');
+                    const locHtml = d.location_name
+                        ? `<span style="color:var(--accent);font-weight:600;">${d.location_name}</span> &middot; `
+                        : '';
                     return `<div class="decision">
                         ${thumbHtml}
                         <span class="badge ${d.priority}">${d.priority}</span>
                         <div class="content">
                             <div class="desc">${d.description}</div>
-                            <div class="meta">${d.image_id} &middot; ${d.source} &middot; ${d.position.lat.toFixed(2)}, ${d.position.lon.toFixed(2)}</div>
+                            <div class="meta">${locHtml}${d.image_id} &middot; ${d.source} &middot; ${d.position.lat.toFixed(2)}, ${d.position.lon.toFixed(2)}</div>
                             ${cats ? `<div class="categories">${cats}</div>` : ''}
                         </div>
                     </div>`;
