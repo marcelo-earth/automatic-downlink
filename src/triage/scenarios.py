@@ -191,7 +191,8 @@ SCENARIOS: dict[str, Scenario] = {
 }
 
 
-FEATURED_KEYS = {"eaton-fire", "lahaina-wildfire", "enga-landslide"}
+FEATURED_KEYS = {"lahaina-wildfire", "lahaina-peak-check"}
+DEMO_SAFE_KEYS = {"lahaina-wildfire", "lahaina-peak-check"}
 
 
 def list_scenarios() -> list[dict]:
@@ -204,6 +205,7 @@ def list_scenarios() -> list[dict]:
             "lat": s.lat,
             "lon": s.lon,
             "featured": s.key in FEATURED_KEYS,
+            "demo_safe": s.key in DEMO_SAFE_KEYS,
             "peak_event": s.peak_event,
         }
         for s in SCENARIOS.values()

@@ -79,37 +79,29 @@ The triage engine will start polling SimSat for satellite images and analyzing t
 └──────────────────────────────────────────────────────┘
 ```
 
-## Current Status
-
-The repo still includes the earlier VRSBench-based fine-tuned model as a baseline:
+## Model & Weights
 
 - **Model weights:** [marcelo-earth/LFM2.5-VL-450M-satellite-triage](https://huggingface.co/marcelo-earth/LFM2.5-VL-450M-satellite-triage)
-- **Historical labels:** [marcelo-earth/VRSBench-satellite-triage-labels](https://huggingface.co/datasets/marcelo-earth/VRSBench-satellite-triage-labels)
+- **Training labels:** [marcelo-earth/VRSBench-satellite-triage-labels](https://huggingface.co/datasets/marcelo-earth/VRSBench-satellite-triage-labels)
 
-That baseline was useful for proving local inference and JSON generation, but the project
-has now moved to **EXP 6**, which prioritizes:
+Benchmarking and experiment notes live under [`evals/`](evals) and [`EXP_6.md`](EXP_6.md).
 
-- real-domain Sentinel-2 / SimSat evaluation first
-- hazard-oriented priority policy
-- cascade improvements before retraining
-- targeted real-domain supervision for hazards
+## Validated Demo Scenarios
 
-Benchmarking and experiment notes live under [`evals/`](evals) and
-[`EXP_6.md`](EXP_6.md).
+The following temporal-replay scenarios produce reliable CRITICAL/HIGH detections
+and are safe to demonstrate live:
 
-### Training direction after v5 post-mortem
+| Scenario | Key event | Result |
+|----------|-----------|--------|
+| **Lahaina wildfire peak check** | Aug 8–9 2023, 100+ fatalities, 2,700+ structures lost | CRITICAL on burn scar frames |
+| **Lahaina wildfire (full timeline)** | Baseline → fire → recovery (10 frames) | CRITICAL at peak, LOW at baseline |
 
-A `v5` pass that mixed VRSBench with 17 oversampled hand-labeled hazard images
-converged cleanly on training loss but scored `CRITICAL 0/3` and `HIGH 0/2` on
-the frozen real-domain eval — the model learned VRSBench caption style instead
-of hazard detection. Details in [`EXP_6.md`](EXP_6.md).
+Select either from the **"✓ Demo Ready"** group in the dashboard dropdown.
 
-The next training pass drops VRSBench, moves to RGB + SWIR dual-image inputs,
-uses frontier-model teacher labels on a programmatic grid of real Sentinel-2
-captures, does full fine-tune instead of LoRA, and splits train/test
-temporally to avoid Sentinel-2's 5-day revisit leaking into eval.
+Other scenarios (Eaton, Enga, Spain, Libya, etc.) are included for completeness
+but have not produced consistent hazard detections against current Sentinel-2 tiles.
 
-### Historical Training Reproduction
+### Training Reproduction
 
 **Option A — Kaggle (free, recommended):**
 

@@ -501,11 +501,15 @@
                     });
                     sel.appendChild(grp);
                 };
-                const featured = data.scenarios.filter(s => s.featured);
-                const others   = data.scenarios.filter(s => !s.featured);
-                if (featured.length) addGroup('⭐ Featured (curated timelines)', featured);
-                if (others.length)   addGroup('Other scenarios', others);
-                sel.value = data.active_key || (data.paused ? 'paused' : 'off');
+                const demoSafe  = data.scenarios.filter(s => s.demo_safe);
+                const featured  = data.scenarios.filter(s => s.featured && !s.demo_safe);
+                const others    = data.scenarios.filter(s => !s.featured && !s.demo_safe);
+                if (demoSafe.length)  addGroup('✓ Demo Ready (validated)', demoSafe);
+                if (featured.length)  addGroup('⭐ Extended timelines', featured);
+                if (others.length)    addGroup('⚠ Experimental (not validated)', others);
+                // Default to lahaina-peak-check for a clean first impression
+                const defaultKey = data.active_key || (data.paused ? 'lahaina-peak-check' : 'off');
+                sel.value = defaultKey;
                 modelPaused = data.paused ?? true;
                 showContextCard(sel.value);
             } catch (e) {}
