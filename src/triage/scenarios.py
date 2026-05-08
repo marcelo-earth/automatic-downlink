@@ -24,6 +24,7 @@ class Scenario:
     lat: float
     lon: float
     frames: tuple[ScenarioFrame, ...]
+    peak_event: str = ""  # short context string shown in sidebar
 
 
 SCENARIOS: dict[str, Scenario] = {
@@ -31,15 +32,22 @@ SCENARIOS: dict[str, Scenario] = {
     "eaton-fire": Scenario(
         key="eaton-fire",
         name="Eaton Fire, Los Angeles CA",
-        lat=34.18,
-        lon=-118.03,
+        lat=34.203483,
+        lon=-118.069155,
+        peak_event="Fire ignited Jan 7, 2025 near Altadena Drive/Midwick Drive — peak destruction Jan 8–13",
         frames=(
+            ScenarioFrame("2024-04-10T18:00:00Z", "Quiet — Spring 2024"),
+            ScenarioFrame("2024-08-15T18:00:00Z", "Quiet — Summer 2024"),
             ScenarioFrame("2024-11-15T18:00:00Z", "Pre-fire baseline (Nov 2024)"),
             ScenarioFrame("2024-12-20T18:00:00Z", "Pre-fire baseline (Dec 2024)"),
             ScenarioFrame("2025-01-08T18:00:00Z", "Day after ignition"),
+            ScenarioFrame("2025-01-10T18:00:00Z", "Active fire — Day 3"),
             ScenarioFrame("2025-01-13T18:00:00Z", "Fire at peak"),
+            ScenarioFrame("2025-01-16T18:00:00Z", "Fire slowing"),
             ScenarioFrame("2025-01-28T18:00:00Z", "Fresh burn scar"),
+            ScenarioFrame("2025-02-10T18:00:00Z", "Burn scar settled"),
             ScenarioFrame("2025-03-15T18:00:00Z", "Early recovery"),
+            ScenarioFrame("2025-05-01T18:00:00Z", "Spring regrowth"),
             ScenarioFrame("2025-06-15T18:00:00Z", "Late recovery"),
             ScenarioFrame("2025-10-01T18:00:00Z", "9 months later"),
         ),
@@ -47,9 +55,12 @@ SCENARIOS: dict[str, Scenario] = {
     "lahaina-wildfire": Scenario(
         key="lahaina-wildfire",
         name="Lahaina wildfire, Maui HI",
-        lat=20.87,
-        lon=-156.68,
+        lat=20.871,
+        lon=-156.6785,
+        peak_event="Fire destroyed Lahaina town Aug 8–9, 2023 — 100+ fatalities, 2,700+ structures lost",
         frames=(
+            ScenarioFrame("2022-10-01T20:00:00Z", "Quiet — Oct 2022"),
+            ScenarioFrame("2023-03-15T20:00:00Z", "Quiet — Spring 2023"),
             ScenarioFrame("2023-06-01T20:00:00Z", "Pre-fire baseline (Jun 2023)"),
             ScenarioFrame("2023-07-15T20:00:00Z", "Pre-fire baseline (Jul 2023)"),
             ScenarioFrame("2023-08-09T20:00:00Z", "Day after fire"),
@@ -63,9 +74,12 @@ SCENARIOS: dict[str, Scenario] = {
     "enga-landslide": Scenario(
         key="enga-landslide",
         name="Enga Province landslide, Papua New Guinea",
-        lat=-5.40,
-        lon=143.00,
+        lat=-5.37389,
+        lon=143.38861,
+        peak_event="Massive landslide May 24, 2024 near Yambali/Mulitaka — buried village, 2,000+ estimated casualties",
         frames=(
+            ScenarioFrame("2023-07-01T00:00:00Z", "Quiet — Jul 2023"),
+            ScenarioFrame("2023-11-15T00:00:00Z", "Quiet — Nov 2023"),
             ScenarioFrame("2024-03-01T00:00:00Z", "Pre-slide baseline (Mar 2024)"),
             ScenarioFrame("2024-04-15T00:00:00Z", "Pre-slide baseline (Apr 2024)"),
             ScenarioFrame("2024-05-30T00:00:00Z", "Days after slide"),
@@ -73,6 +87,44 @@ SCENARIOS: dict[str, Scenario] = {
             ScenarioFrame("2024-09-15T00:00:00Z", "Stable scar (3 months)"),
             ScenarioFrame("2024-12-15T00:00:00Z", "6 months later"),
             ScenarioFrame("2025-04-15T00:00:00Z", "1 year later"),
+        ),
+    ),
+    # === Peak checks (short calibration replays for demo debugging) ===
+    "eaton-peak-check": Scenario(
+        key="eaton-peak-check",
+        name="Eaton Fire peak check, Los Angeles CA",
+        lat=34.203483,
+        lon=-118.069155,
+        peak_event="Fire ignited Jan 7, 2025 near Altadena Drive/Midwick Drive — peak destruction Jan 8–13",
+        frames=(
+            ScenarioFrame("2025-01-08T18:00:00Z", "Day after ignition"),
+            ScenarioFrame("2025-01-10T18:00:00Z", "Active fire — Day 3"),
+            ScenarioFrame("2025-01-13T18:00:00Z", "Fire at peak"),
+            ScenarioFrame("2025-01-16T18:00:00Z", "Fire slowing"),
+        ),
+    ),
+    "lahaina-peak-check": Scenario(
+        key="lahaina-peak-check",
+        name="Lahaina wildfire peak check, Maui HI",
+        lat=20.871,
+        lon=-156.6785,
+        peak_event="Fire destroyed Lahaina town Aug 8–9, 2023 — 100+ fatalities, 2,700+ structures lost",
+        frames=(
+            ScenarioFrame("2023-08-09T20:00:00Z", "Day after fire"),
+            ScenarioFrame("2023-08-14T20:00:00Z", "Sentinel post-fire burn scar"),
+            ScenarioFrame("2023-08-25T20:00:00Z", "Post-fire damage"),
+        ),
+    ),
+    "enga-peak-check": Scenario(
+        key="enga-peak-check",
+        name="Enga landslide peak check, Papua New Guinea",
+        lat=-5.37389,
+        lon=143.38861,
+        peak_event="Massive landslide May 24, 2024 near Yambali/Mulitaka — buried village, 2,000+ estimated casualties",
+        frames=(
+            ScenarioFrame("2024-05-25T00:00:00Z", "Day after landslide"),
+            ScenarioFrame("2024-05-30T00:00:00Z", "Days after slide"),
+            ScenarioFrame("2024-07-01T00:00:00Z", "Debris field (1 month)"),
         ),
     ),
     # === Additional scenarios (kept for reference, less reliable) ===
@@ -152,6 +204,7 @@ def list_scenarios() -> list[dict]:
             "lat": s.lat,
             "lon": s.lon,
             "featured": s.key in FEATURED_KEYS,
+            "peak_event": s.peak_event,
         }
         for s in SCENARIOS.values()
     ]

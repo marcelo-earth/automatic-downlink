@@ -5,10 +5,11 @@ from __future__ import annotations
 import logging
 import os
 import platform
-from typing import TYPE_CHECKING
+from threading import Thread
+from typing import TYPE_CHECKING, Callable
 
 import torch
-from transformers import AutoModelForImageTextToText, AutoProcessor
+from transformers import AutoModelForImageTextToText, AutoProcessor, TextIteratorStreamer
 
 if TYPE_CHECKING:
     from PIL import Image
@@ -69,7 +70,13 @@ class TriageModel:
         self.processor = AutoProcessor.from_pretrained(BASE_MODEL_ID)
         logger.info("Model loaded on %s (%s).", self.device, dtype)
 
-    def generate(self, image: Image.Image, system_prompt: str, user_prompt: str) -> str:
+    def generate(
+        self,
+        image: Image.Image,
+        system_prompt: str,
+        user_prompt: str,
+        on_token: Callable[[str], None] | None = None,
+    ) -> str:
         """Run inference on a single image with system + user prompt."""
         if self.model is None or self.processor is None:
             raise RuntimeError("Model not loaded. Call load() first.")
@@ -84,7 +91,7 @@ class TriageModel:
                 ],
             },
         ]
-        return self._run_conversation(conversation)
+        return self._run_conversation(conversation, on_token=on_token)
 
     def generate_dual(
         self,
@@ -92,6 +99,7 @@ class TriageModel:
         swir_image: Image.Image,
         system_prompt: str,
         user_prompt: str,
+        on_token: Callable[[str], None] | None = None,
     ) -> str:
         """Run inference on an RGB + SWIR image pair (dual-image model input)."""
         if self.model is None or self.processor is None:
@@ -108,9 +116,13 @@ class TriageModel:
                 ],
             },
         ]
-        return self._run_conversation(conversation)
+        return self._run_conversation(conversation, on_token=on_token)
 
-    def _run_conversation(self, conversation: list[dict]) -> str:
+    def _run_conversation(
+        self,
+        conversation: list[dict],
+        on_token: Callable[[str], None] | None = None,
+    ) -> str:
         """Shared inference path for single- and dual-image conversations."""
         if self.model is None or self.processor is None:
             raise RuntimeError("Model not loaded. Call load() first.")
@@ -123,12 +135,37 @@ class TriageModel:
             tokenize=True,
         ).to(self.model.device if self.device == "cuda" else self.device)
 
-        with torch.inference_mode():
-            output_ids = self.model.generate(**inputs, **GENERATION_KWARGS)
+        if on_token is None:
+            with torch.inference_mode():
+                output_ids = self.model.generate(**inputs, **GENERATION_KWARGS)
+            generated_ids = output_ids[0, inputs["input_ids"].shape[1] :]
+            return self.processor.decode(generated_ids, skip_special_tokens=True)
 
-        # Decode only the generated tokens (skip the input)
-        generated_ids = output_ids[0, inputs["input_ids"].shape[1] :]
-        return self.processor.decode(generated_ids, skip_special_tokens=True)
+        # Streaming path: run generate() in a background thread and forward
+        # tokens to on_token as they arrive.
+        streamer = TextIteratorStreamer(
+            self.processor.tokenizer,
+            skip_prompt=True,
+            skip_special_tokens=True,
+        )
+        gen_kwargs = {**inputs, **GENERATION_KWARGS, "streamer": streamer}
+
+        def _run() -> None:
+            with torch.inference_mode():
+                self.model.generate(**gen_kwargs)
+
+        thread = Thread(target=_run, daemon=True)
+        thread.start()
+
+        accumulated = ""
+        for chunk in streamer:
+            accumulated += chunk
+            try:
+                on_token(accumulated)
+            except Exception:
+                logger.exception("on_token callback failed; continuing generation")
+        thread.join()
+        return accumulated
 
     @property
     def is_loaded(self) -> bool:

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 import numpy as np
 
@@ -69,6 +70,16 @@ STRUCTURED_SCENE_KEYWORDS = {
     "shoreline",
     "urban",
 }
+
+
+def _priority_rank(priority: Priority) -> int:
+    return {
+        Priority.SKIP: 0,
+        Priority.LOW: 1,
+        Priority.MEDIUM: 2,
+        Priority.HIGH: 3,
+        Priority.CRITICAL: 4,
+    }[priority]
 
 
 class TriageEngine:
@@ -250,6 +261,7 @@ class TriageEngine:
         source: str = "sentinel",
         image_id: str | None = None,
         swir_image: "Image.Image | None" = None,
+        on_partial: Callable[[str], None] | None = None,
     ) -> TriageDecision:
         """Analyze a satellite image and produce a triage decision.
 
@@ -267,25 +279,44 @@ class TriageEngine:
             base_priority = Priority(parsed.get("priority", "MEDIUM"))
             final_priority = base_priority
         else:
+            on_token = None
+            if on_partial is not None:
+                desc_re = re.compile(r'"description"\s*:\s*"((?:[^"\\]|\\.)*)', re.DOTALL)
+
+                def on_token(accumulated: str) -> None:
+                    m = desc_re.search(accumulated)
+                    if m:
+                        try:
+                            partial = bytes(m.group(1), "utf-8").decode("unicode_escape")
+                        except UnicodeDecodeError:
+                            partial = m.group(1)
+                        on_partial(partial)
+
             if swir_image is not None:
                 raw_output = self.model.generate_dual(
                     rgb_image=image,
                     swir_image=swir_image,
                     system_prompt=TRIAGE_DUAL_SYSTEM_PROMPT,
                     user_prompt=TRIAGE_DUAL_USER_PROMPT,
+                    on_token=on_token,
                 )
             else:
                 raw_output = self.model.generate(
                     image=image,
                     system_prompt=self.system_prompt,
                     user_prompt=TRIAGE_USER_PROMPT,
+                    on_token=on_token,
                 )
             parsed = self._parse_model_output(raw_output)
             base_priority = Priority(parsed.get("priority", "MEDIUM"))
+            semantic_priority, semantic_reason = self._semantic_priority_floor(parsed, base_priority)
             if self.use_decision_layer:
                 final_priority, override_reason = self._apply_decision_layer(parsed, signals)
             else:
                 final_priority = base_priority
+            if _priority_rank(semantic_priority) > _priority_rank(final_priority):
+                final_priority = semantic_priority
+                override_reason = semantic_reason
 
         priority = final_priority
         decision = TriageDecision(
@@ -312,6 +343,86 @@ class TriageEngine:
             decision.description[:80],
         )
         return decision
+
+    def _semantic_priority_floor(
+        self,
+        parsed: dict,
+        base_priority: Priority,
+    ) -> tuple[Priority, str | None]:
+        """Prevent internally inconsistent JSON from under-prioritizing hazards.
+
+        The model sometimes writes LOW while its own reasoning says active fire,
+        hotspot, flooding, or fresh landslide. In that case, trust the stronger
+        semantic hazard evidence already present in the model output.
+        """
+        if base_priority == Priority.SKIP:
+            return base_priority, None
+
+        description = str(parsed.get("description", "")).lower()
+        reasoning = str(parsed.get("reasoning", "")).lower()
+        categories = [str(c).lower() for c in parsed.get("categories", [])]
+        text_blob = " ".join([description, reasoning, " ".join(categories)])
+
+        cloud_or_nodata = any(token in text_blob for token in ("cloud dominated", "no-data", "no data"))
+        if cloud_or_nodata:
+            return base_priority, None
+
+        # Remove explicit negative evidence before looking for hazard terms.
+        # Example: "no thermal hotspots" must not trigger the "hotspot" rule.
+        positive_text = text_blob
+        for phrase in (
+            "no thermal hotspots",
+            "no thermal hotspot",
+            "no hotspots",
+            "no hotspot",
+            "no smoke plume",
+            "no smoke",
+            "no active fire",
+            "no fire",
+            "no burn",
+            "no flooding",
+            "no flood",
+            "no landslide",
+            "no debris",
+        ):
+            positive_text = positive_text.replace(phrase, "")
+
+        critical_terms = (
+            "active fire",
+            "actively burning",
+            "thermal hotspot",
+            "bright red/orange hotspot",
+            "red/orange hotspot",
+            "smoke plume",
+            "active flooding",
+            "widespread flooding",
+            "fresh landslide",
+            "fresh debris",
+            "landslide scar",
+        )
+        high_terms = (
+            "burn scar",
+            "post-fire",
+            "fire damage",
+            "flood aftermath",
+            "receding floodwater",
+            "debris field",
+            "destroyed vegetation",
+        )
+
+        if any(term in positive_text for term in critical_terms):
+            return (
+                Priority.CRITICAL,
+                "Semantic consistency layer raised priority: model text describes an active hazard.",
+            )
+
+        if any(term in positive_text for term in high_terms):
+            return (
+                Priority.HIGH,
+                "Semantic consistency layer raised priority: model text describes hazard aftermath.",
+            )
+
+        return base_priority, None
 
     def _parse_model_output(self, raw: str) -> dict:
         """Parse the model's JSON output, handling common formatting issues."""

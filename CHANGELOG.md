@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-05-08
+
+### Demo replay hardening and Sentinel no-data trimming
+
+- Added production demo controls for finite replay scenarios, model-off default state, streaming ANALYZING rows, RGB+SWIR thumbnails, inference timing, and event context.
+- Fixed scenario replay race conditions so stale in-flight results are discarded when switching events.
+- Fixed scenario exhaustion so the model stops after the configured frame count instead of looping into more captures.
+- Added capture date/time to feed cards and ordered scenario timelines newest-first for demo readability.
+- Added a Sentinel no-data border trim before both dashboard rendering and VLM inference. This removes black edge-of-granule strips from RGB/SWIR crops without cropping real interior burn scars.
+- Calibrated replay inputs with event-specific coordinates and added short peak-check scenarios for Eaton, Lahaina, and Enga.
+- Added a semantic consistency layer so LOW cannot survive when the model's own text describes active fire, hotspots, flooding, or fresh landslide evidence. Replay event context is displayed in the dashboard only; it is not fed into model inference.
+- Fixed a semantic-layer false positive where "no thermal hotspots" matched "hotspot", and removed prompt examples that caused repeated stock "dense urban/no hotspot" descriptions.
+
 ## 2026-05-06
 
 ### Docker smoke test passed, ARCHITECTURE.md rewritten for demo

@@ -41,6 +41,16 @@
             background: #22c55e; margin-right: 6px; animation: pulse 2s infinite;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @media (prefers-reduced-motion: reduce) {
+            .dot, .badge.ANALYZING { animation: none; }
+            .typing-cursor { animation: none; opacity: 1; }
+        }
+        .typing-cursor {
+            display: inline-block; width: 7px; height: 14px;
+            background: var(--high); margin-left: 2px;
+            vertical-align: text-bottom; animation: blink 0.9s infinite;
+        }
         .grid {
             display: grid;
             grid-template-columns: 320px 1fr;
@@ -95,12 +105,24 @@
             display: flex; gap: 12px; align-items: flex-start;
         }
         .decision .thumb {
-            width: 80px; height: 80px; border-radius: 6px; object-fit: cover;
+            width: 96px; height: 96px; border-radius: 6px; object-fit: cover;
             border: 1px solid var(--border); flex-shrink: 0;
         }
         .decision .thumb-col {
             display: flex; flex-direction: column; align-items: center;
             gap: 6px; flex-shrink: 0;
+        }
+        .decision .thumb-pair {
+            display: flex; flex-direction: row; gap: 4px;
+        }
+        .decision .thumb-wrap {
+            position: relative; line-height: 0;
+        }
+        .decision .thumb-label {
+            position: absolute; top: 3px; left: 3px;
+            background: rgba(0,0,0,0.7); color: white;
+            font-size: 9px; font-weight: 700; padding: 2px 5px;
+            border-radius: 3px; letter-spacing: 0.5px;
         }
         .decision .badge {
             font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
@@ -110,7 +132,7 @@
         .badge.HIGH { background: var(--high); color: white; }
         .badge.MEDIUM { background: var(--medium); color: #1a1a1a; }
         .badge.LOW { background: var(--low); color: white; }
-        .badge.SKIP { background: var(--skip); color: var(--text-dim); }
+        .badge.SKIP { background: var(--skip); color: var(--text); }
         .badge.ANALYZING {
             background: var(--high); color: white;
             animation: pulse 1.2s infinite;
@@ -142,7 +164,7 @@
     <div class="header">
         <h1>automatic-downlink <span style="color: var(--text-dim); font-weight: 400;">/ ground station</span></h1>
         <div style="display:flex;align-items:center;gap:16px;">
-            <select id="scenario-select" style="
+            <select id="scenario-select" aria-label="Demo scenario" style="
                 background: var(--surface); color: var(--text);
                 border: 1px solid var(--border); border-radius: 6px;
                 padding: 6px 10px; font-family: inherit; font-size: 12px;
@@ -158,7 +180,7 @@
         <div class="sidebar">
             <div class="stat-card">
                 <div class="label">Satellite Position</div>
-                <div id="map"></div>
+                <div id="map" role="img" aria-label="Satellite position map"></div>
                 <div class="sat-coords" id="sat-coords">Waiting for telemetry...</div>
             </div>
 
@@ -179,20 +201,30 @@
                 <div class="label">Priority Distribution</div>
                 <div class="priority-bars" id="priority-bars"></div>
             </div>
+
+            <div class="stat-card" id="context-card" style="display:none">
+                <div class="label">Event Context</div>
+                <div id="context-name" style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:6px;"></div>
+                <div id="context-peak" style="font-size:11px;color:var(--medium);line-height:1.5;"></div>
+            </div>
         </div>
 
         <div class="feed">
-            <div class="feed-header">Triage Feed</div>
-            <div id="feed-content">
-                <div class="empty-state">
-                    <h2>Waiting for satellite data</h2>
-                    <p>Triage decisions will appear here as the satellite captures images.</p>
+            <h2 class="feed-header">Triage Feed</h2>
+            <div id="feed-content" aria-live="polite" aria-atomic="false">
+                <div id="analyzing-row"></div>
+                <div id="decisions-feed">
+                    <div class="empty-state">
+                        <h2>Model off</h2>
+                        <p>Select a scenario or demo mode to start analysis.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // ── Map ──────────────────────────────────────────────────────────────
         const map = L.map('map', {
             center: [20, 0], zoom: 1, zoomControl: false,
             attributionControl: false, dragging: false,
@@ -201,31 +233,50 @@
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 18
         }).addTo(map);
-
-        const satIcon = L.divIcon({
+        const satMarker = L.marker([0, 0], { icon: L.divIcon({
             html: '<div style="width:12px;height:12px;background:#3b82f6;border:2px solid #93c5fd;border-radius:50%;box-shadow:0 0 8px #3b82f6;"></div>',
             iconSize: [12, 12], className: ''
-        });
-        const satMarker = L.marker([0, 0], { icon: satIcon }).addTo(map);
+        })}).addTo(map);
         const trail = L.polyline([], { color: '#3b82f6', weight: 1.5, opacity: 0.4 }).addTo(map);
         const trailPoints = [];
+        const decisionMarkers = L.layerGroup().addTo(map);
 
+        // ── State ─────────────────────────────────────────────────────────────
         const PRIORITY_COLORS = {
             CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308',
-            LOW: '#6b7280', SKIP: '#374151'
+            LOW: '#6b7280', SKIP: '#374151',
         };
-
-        const decisionMarkers = L.layerGroup().addTo(map);
         let markerCount = 0;
+        let renderedCount = 0;
+        let analyzingStart = null;
+        let analyzingKey = null;
+        let modelPaused = true;
 
+        // ── Pure helpers ──────────────────────────────────────────────────────
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c =>
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        function fmtMonth(iso) {
+            if (!iso) return '';
+            return new Date(iso).toLocaleString('en-US', {
+                day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: false,
+            });
+        }
+        function fmtTime(iso) {
+            if (!iso) return '';
+            return new Date(iso).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
         function makeDecisionIcon(priority) {
             const color = PRIORITY_COLORS[priority] || '#6b7280';
             return L.divIcon({
                 html: `<div style="width:8px;height:8px;background:${color};border:1px solid rgba(255,255,255,0.3);border-radius:50%;"></div>`,
-                iconSize: [8, 8], className: ''
+                iconSize: [8, 8], className: '',
             });
         }
 
+        // ── Position (every 1.5 s) ────────────────────────────────────────────
         async function updatePosition() {
             try {
                 const r = await fetch('/api/position');
@@ -240,18 +291,15 @@
                     document.getElementById('status-text').textContent = 'Tracking live orbit';
                     return;
                 }
-                // Not live → in demo or scenario mode; track the satellite over the
-                // location currently being analyzed, with a trail across recent sites.
                 const [curR, decR] = await Promise.all([
-                    fetch('/api/current'),
-                    fetch('/api/decisions?limit=20'),
+                    fetch('/api/current'), fetch('/api/decisions?limit=20'),
                 ]);
                 const current = await curR.json();
                 const decisions = await decR.json();
                 const coords = document.getElementById('sat-coords');
 
                 let activeLat = null, activeLon = null, activeName = null;
-                if (current && typeof current.position?.lat === 'number') {
+                if (typeof current.position?.lat === 'number') {
                     activeLat = current.position.lat;
                     activeLon = current.position.lon;
                     activeName = current.location_name;
@@ -270,198 +318,250 @@
                     coords.textContent = 'Waiting for first capture…';
                 }
 
-                // Trail = path through recent decision positions (deduplicated for scenario mode)
                 const path = [];
                 let prevKey = null;
                 for (const d of decisions) {
                     const key = `${d.position.lat.toFixed(3)},${d.position.lon.toFixed(3)}`;
-                    if (key !== prevKey) {
-                        path.push([d.position.lat, d.position.lon]);
-                        prevKey = key;
-                    }
+                    if (key !== prevKey) { path.push([d.position.lat, d.position.lon]); prevKey = key; }
                 }
                 if (activeLat !== null) path.push([activeLat, activeLon]);
                 trail.setLatLngs(path);
-
                 document.getElementById('status-text').textContent =
-                    decisions.length > 0 ? 'Tracking analysis path' : 'Demo mode';
-            } catch(e) {}
+                    decisions.length > 0 ? 'Tracking analysis path' : (modelPaused ? 'Model off' : 'Demo mode');
+            } catch (e) {}
         }
 
+        // ── Feed (every 400 ms) ───────────────────────────────────────────────
         async function updateFeed() {
             try {
                 const [statsR, decisionsR, currentR] = await Promise.all([
-                    fetch('/api/stats'), fetch('/api/decisions?limit=50'), fetch('/api/current')
+                    fetch('/api/stats'), fetch('/api/decisions?limit=50'), fetch('/api/current'),
                 ]);
-                const stats = await statsR.json();
-                const decisions = await decisionsR.json();
-                const current = await currentR.json();
+                const [stats, decisions, current] = await Promise.all([
+                    statsR.json(), decisionsR.json(), currentR.json(),
+                ]);
 
+                // Sidebar stats
                 document.getElementById('stat-savings').textContent = stats.savings_percent + '%';
                 document.getElementById('stat-critical').textContent = stats.critical_count;
                 document.getElementById('stat-high').textContent = stats.high_count;
-
                 const total = Math.max(stats.total_images, 1);
-                const barsHtml = ['CRITICAL','HIGH','MEDIUM','LOW','SKIP'].map(level => {
-                    const count = stats.by_priority[level] || 0;
-                    const pct = Math.round(count / total * 100);
-                    return `<div class="priority-bar">
-                        <span class="bar-label">${level}</span>
-                        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${PRIORITY_COLORS[level]}"></div></div>
-                        <span class="bar-count">${count}</span>
-                    </div>`;
-                }).join('');
-                document.getElementById('priority-bars').innerHTML = barsHtml;
+                document.getElementById('priority-bars').innerHTML =
+                    ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'SKIP'].map(level => {
+                        const count = stats.by_priority[level] || 0;
+                        const pct = Math.round(count / total * 100);
+                        return `<div class="priority-bar">
+                            <span class="bar-label">${level}</span>
+                            <div class="bar-track"><div class="bar-fill" role="progressbar"
+                                aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"
+                                aria-label="${level}: ${count}"
+                                style="width:${pct}%;background:${PRIORITY_COLORS[level]}"></div></div>
+                            <span class="bar-count">${count}</span>
+                        </div>`;
+                    }).join('');
 
-                // Detect a reset (decisions cleared by backend, e.g. scenario change)
-                if (decisions.length < markerCount) {
+                // Map markers — incremental; reset when backend cleared the store
+                const wasReset = decisions.length < markerCount;
+                if (wasReset) {
                     decisionMarkers.clearLayers();
                     markerCount = 0;
+                    renderedCount = 0;
                     trailPoints.length = 0;
                     trail.setLatLngs([]);
                 }
-
-                if (decisions.length === 0) return;
-
                 if (decisions.length > markerCount) {
                     for (let i = markerCount; i < decisions.length; i++) {
                         const d = decisions[i];
-                        const m = L.marker([d.position.lat, d.position.lon], {
-                            icon: makeDecisionIcon(d.priority)
-                        });
-                        const locLabel = d.location_name ? `${d.location_name}\n` : '';
-                        m.bindTooltip(`${d.priority} — ${locLabel}${d.description.slice(0, 60)}...`, {
-                            className: 'dark-tooltip'
-                        });
+                        const m = L.marker([d.position.lat, d.position.lon],
+                            { icon: makeDecisionIcon(d.priority) });
+                        const loc = d.location_name ? escapeHtml(d.location_name) + '\n' : '';
+                        m.bindTooltip(`${d.priority} — ${loc}${escapeHtml(d.description.slice(0, 60))}…`,
+                            { className: 'dark-tooltip' });
                         decisionMarkers.addLayer(m);
                     }
                     markerCount = decisions.length;
-
-                    const allPoints = decisions.map(d => [d.position.lat, d.position.lon]);
-                    if (trailPoints.length > 0) allPoints.push(...trailPoints.slice(-10));
-                    if (allPoints.length > 1) {
-                        map.fitBounds(L.latLngBounds(allPoints).pad(0.2));
-                    }
+                    const pts = decisions.map(d => [d.position.lat, d.position.lon]);
+                    if (pts.length > 1) map.fitBounds(L.latLngBounds(pts).pad(0.2));
                 }
 
-                // Ghost row for image currently being analyzed
-                let analyzingHtml = '';
+                // Analyzing ghost row — always refreshed (streaming description + timer)
+                const analyzingEl = document.getElementById('analyzing-row');
                 if (current && current.location_name) {
-                    const thumb = current.image_b64
-                        ? `<img class="thumb" src="data:image/jpeg;base64,${current.image_b64}" alt="Analyzing">`
-                        : '';
+                    const key = current.location_name + '|' + (current.frame_timestamp || '');
+                    if (key !== analyzingKey) { analyzingKey = key; analyzingStart = performance.now(); }
+                    const placeholder = `<div class="thumb" style="display:flex;align-items:center;justify-content:center;background:var(--border);color:var(--text-dim);font-size:10px;text-align:center;padding:4px;">Fetching…</div>`;
+                    const rgbImg = current.image_b64
+                        ? `<div class="thumb-wrap"><img class="thumb" src="data:image/jpeg;base64,${current.image_b64}" alt="RGB"><span class="thumb-label">RGB</span></div>`
+                        : `<div class="thumb-wrap">${placeholder}<span class="thumb-label">RGB</span></div>`;
+                    const swirImg = current.swir_b64
+                        ? `<div class="thumb-wrap"><img class="thumb" src="data:image/jpeg;base64,${current.swir_b64}" alt="SWIR"><span class="thumb-label">SWIR</span></div>`
+                        : `<div class="thumb-wrap">${placeholder}<span class="thumb-label">SWIR</span></div>`;
                     const pos = current.position
-                        ? ` &middot; ${current.position.lat.toFixed(2)}, ${current.position.lon.toFixed(2)}`
-                        : '';
-                    analyzingHtml = `<div class="decision analyzing">
+                        ? ` &middot; ${current.position.lat.toFixed(2)}, ${current.position.lon.toFixed(2)}` : '';
+                    const descBody = current.partial_description
+                        ? escapeHtml(current.partial_description)
+                        : `<span style="color:var(--text-dim);">Loading description…</span>`;
+                    const elapsed = analyzingStart !== null
+                        ? ((performance.now() - analyzingStart) / 1000).toFixed(1) + 's' : '0.0s';
+                    const capDate = current.frame_timestamp
+                        ? `<span style="color:var(--medium);font-weight:600;">📅 ${fmtMonth(current.frame_timestamp)}</span> &middot; ` : '';
+                    analyzingEl.innerHTML = `<div class="decision analyzing">
                         <div class="thumb-col">
-                            ${thumb}
+                            <div class="thumb-pair">${rgbImg}${swirImg}</div>
                             <span class="badge ANALYZING">ANALYZING</span>
+                            <span id="analyzing-timer" style="font-size:11px;color:var(--high);font-weight:700;font-variant-numeric:tabular-nums;">${elapsed}</span>
                         </div>
                         <div class="content">
-                            <div class="desc">Reading RGB and SWIR channels — model is generating triage decision...</div>
-                            <div class="meta"><span style="color:var(--accent);font-weight:600;">${current.location_name}</span>${pos}</div>
+                            <div class="desc">${descBody}</div>
+                            <div class="meta">${capDate}<span style="color:var(--accent);font-weight:600;">${escapeHtml(current.location_name)}</span>${pos}</div>
                         </div>
                     </div>`;
+                } else {
+                    analyzingEl.innerHTML = '';
+                    analyzingKey = null;
+                    analyzingStart = null;
                 }
 
-                const fmtMonth = (iso) => {
-                    if (!iso) return '';
-                    const dt = new Date(iso);
-                    return dt.toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-                };
-                // In scenario mode → chronological (oldest event date first, story reads top→bottom).
-                // In demo mode → newest-decision-first (live feed feel).
-                const isScenarioMode = decisions.length > 0 && decisions[0].scenario_frame;
-                const ordered = isScenarioMode
-                    ? [...decisions].sort((a, b) => {
-                        const ai = a.scenario_frame?.index ?? 0;
-                        const bi = b.scenario_frame?.index ?? 0;
-                        return ai - bi;
-                    })
-                    : [...decisions].reverse();
-                const feedHtml = ordered.map(d => {
-                    const thumbHtml = d.image_b64
-                        ? `<img class="thumb" src="data:image/jpeg;base64,${d.image_b64}" alt="Satellite image">`
-                        : '';
-                    const cats = (d.categories || []).map(c => `<span>${c}</span>`).join('');
-                    const locHtml = d.location_name
-                        ? `<span style="color:var(--accent);font-weight:600;">${d.location_name}</span> &middot; `
-                        : '';
-                    const frameDate = d.scenario_frame?.timestamp
-                        ? `<span style="color:var(--medium);font-weight:600;">📅 ${fmtMonth(d.scenario_frame.timestamp)}</span> &middot; `
-                        : '';
-                    return `<div class="decision">
-                        <div class="thumb-col">
-                            ${thumbHtml}
-                            <span class="badge ${d.priority}">${d.priority}</span>
-                        </div>
-                        <div class="content">
-                            <div class="desc">${d.description}</div>
-                            <div class="meta">${frameDate}${locHtml}${d.position.lat.toFixed(2)}, ${d.position.lon.toFixed(2)}</div>
-                            ${cats ? `<div class="categories">${cats}</div>` : ''}
-                        </div>
-                    </div>`;
-                }).join('');
-                document.getElementById('feed-content').innerHTML = analyzingHtml + feedHtml;
-            } catch(e) {}
+                // Decisions feed — only rebuilt when count changes (avoids re-decoding 50 base64 images/400ms)
+                const feedEl = document.getElementById('decisions-feed');
+                if (decisions.length !== renderedCount || wasReset) {
+                    if (decisions.length === 0) {
+                        feedEl.innerHTML = modelPaused
+                            ? '<div class="empty-state"><h2>Model off</h2><p>Select a scenario or demo mode to start analysis.</p></div>'
+                            : '<div class="empty-state"><h2>Waiting for satellite data</h2><p>Triage decisions will appear here as the satellite captures images.</p></div>';
+                    } else {
+                        // Newest-first for both scenario and demo mode.
+                        const isScenario = !!decisions[0].scenario_frame;
+                        const ordered = isScenario
+                            ? [...decisions].sort((a, b) =>
+                                (b.scenario_frame?.index ?? 0) - (a.scenario_frame?.index ?? 0))
+                            : [...decisions].reverse();
+                        feedEl.innerHTML = ordered.map(d => {
+                            const rgbHtml = d.image_b64
+                                ? `<div class="thumb-wrap"><img class="thumb" src="data:image/jpeg;base64,${d.image_b64}" alt="RGB"><span class="thumb-label">RGB</span></div>` : '';
+                            const swirHtml = d.swir_b64
+                                ? `<div class="thumb-wrap"><img class="thumb" src="data:image/jpeg;base64,${d.swir_b64}" alt="SWIR"><span class="thumb-label">SWIR</span></div>` : '';
+                            const thumbHtml = (rgbHtml || swirHtml) ? `<div class="thumb-pair">${rgbHtml}${swirHtml}</div>` : '';
+                            const cats = (d.categories || []).map(c => `<span>${escapeHtml(c)}</span>`).join('');
+                            const locHtml = d.location_name
+                                ? `<span style="color:var(--accent);font-weight:600;">${escapeHtml(d.location_name)}</span> &middot; ` : '';
+                            const frameDate = d.scenario_frame?.timestamp
+                                ? `<span style="color:var(--medium);font-weight:600;">📅 ${fmtMonth(d.scenario_frame.timestamp)}</span> &middot; ` : '';
+                            const infTime = typeof d.inference_seconds === 'number'
+                                ? `<span style="font-size:11px;color:var(--text-dim);font-weight:600;font-variant-numeric:tabular-nums;">${d.inference_seconds.toFixed(1)}s</span>` : '';
+                            const decTime = d.timestamp
+                                ? `<span style="font-size:10px;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:0.5px;">${fmtTime(d.timestamp)}</span>` : '';
+                            return `<div class="decision">
+                                <div class="thumb-col">
+                                    ${thumbHtml}
+                                    <span class="badge ${escapeHtml(d.priority)}">${escapeHtml(d.priority)}</span>
+                                    ${infTime}
+                                    ${decTime}
+                                </div>
+                                <div class="content">
+                                    <div class="desc">${escapeHtml(d.description)}</div>
+                                    <div class="meta">${frameDate}${locHtml}${d.position.lat.toFixed(2)}, ${d.position.lon.toFixed(2)}</div>
+                                    ${cats ? `<div class="categories">${cats}</div>` : ''}
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+                    renderedCount = decisions.length;
+                }
+            } catch (e) { console.error('updateFeed:', e); }
         }
 
-        // Scenario selector
+        // ── Scenario selector ─────────────────────────────────────────────────
+        let scenarioIndex = {};  // key → scenario metadata
+
+        function showContextCard(key) {
+            const card = document.getElementById('context-card');
+            const s = scenarioIndex[key];
+            if (!s || !s.peak_event) { card.style.display = 'none'; return; }
+            document.getElementById('context-name').textContent = s.name;
+            document.getElementById('context-peak').textContent = s.peak_event;
+            card.style.display = '';
+        }
+
         async function loadScenarios() {
             try {
                 const r = await fetch('/api/scenarios');
                 const data = await r.json();
                 const sel = document.getElementById('scenario-select');
-                // Preserve the "off" option, add scenarios after
-                sel.innerHTML = '<option value="off">Demo mode — cycling sites</option>';
+                sel.innerHTML = '<option value="paused">— Model off —</option><option value="off">Demo mode — cycling sites</option>';
+                const addGroup = (label, items) => {
+                    const grp = document.createElement('optgroup');
+                    grp.label = label;
+                    items.forEach(s => {
+                        scenarioIndex[s.key] = s;
+                        const o = document.createElement('option');
+                        o.value = s.key;
+                        o.textContent = `${s.name} — ${s.frame_count} frames`;
+                        grp.appendChild(o);
+                    });
+                    sel.appendChild(grp);
+                };
                 const featured = data.scenarios.filter(s => s.featured);
-                const others = data.scenarios.filter(s => !s.featured);
-                if (featured.length) {
-                    const grp = document.createElement('optgroup');
-                    grp.label = '⭐ Featured (curated timelines)';
-                    for (const s of featured) {
-                        const opt = document.createElement('option');
-                        opt.value = s.key;
-                        opt.textContent = `${s.name} — ${s.frame_count} frames`;
-                        grp.appendChild(opt);
-                    }
-                    sel.appendChild(grp);
-                }
-                if (others.length) {
-                    const grp = document.createElement('optgroup');
-                    grp.label = 'Other scenarios';
-                    for (const s of others) {
-                        const opt = document.createElement('option');
-                        opt.value = s.key;
-                        opt.textContent = `${s.name} — ${s.frame_count} frames`;
-                        grp.appendChild(opt);
-                    }
-                    sel.appendChild(grp);
-                }
-                if (data.active_key) sel.value = data.active_key;
-            } catch(e) {}
+                const others   = data.scenarios.filter(s => !s.featured);
+                if (featured.length) addGroup('⭐ Featured (curated timelines)', featured);
+                if (others.length)   addGroup('Other scenarios', others);
+                sel.value = data.active_key || (data.paused ? 'paused' : 'off');
+                modelPaused = data.paused ?? true;
+                showContextCard(sel.value);
+            } catch (e) {}
         }
 
         document.getElementById('scenario-select').addEventListener('change', async (e) => {
             const key = e.target.value;
+            modelPaused = key === 'paused';
+            showContextCard(key);
             await fetch(`/api/scenarios/${key}`, { method: 'POST' });
-            // Force immediate refresh of both panels — don't wait for next interval
             decisionMarkers.clearLayers();
             markerCount = 0;
+            renderedCount = 0;
             trailPoints.length = 0;
             trail.setLatLngs([]);
-            document.getElementById('feed-content').innerHTML =
-                '<div class="empty-state"><h2>Loading new sequence…</h2><p>Waiting for first frame.</p></div>';
+            analyzingKey = null;
+            analyzingStart = null;
+            document.getElementById('analyzing-row').innerHTML = '';
+            document.getElementById('decisions-feed').innerHTML = modelPaused
+                ? '<div class="empty-state"><h2>Model off</h2><p>Select a scenario or demo mode to start analysis.</p></div>'
+                : '<div class="empty-state"><h2>Loading new sequence…</h2><p>Waiting for first frame.</p></div>';
             await Promise.all([updateFeed(), updatePosition()]);
         });
 
-        loadScenarios();
+        // ── Scenario state sync (detects when a scenario ends server-side) ───
+        async function syncScenarioState() {
+            try {
+                const r = await fetch('/api/scenarios');
+                const data = await r.json();
+                const sel = document.getElementById('scenario-select');
+                const serverPaused = data.paused ?? true;
+                const serverKey = data.active_key || (serverPaused ? 'paused' : 'off');
+                if (serverPaused && !modelPaused) {
+                    // Scenario ended server-side — sync dropdown and clear feed
+                    modelPaused = true;
+                    sel.value = 'paused';
+                    analyzingKey = null;
+                    analyzingStart = null;
+                    document.getElementById('analyzing-row').innerHTML = '';
+                }
+            } catch (e) {}
+        }
 
+        // ── Boot ──────────────────────────────────────────────────────────────
+        loadScenarios();
         updatePosition();
         updateFeed();
         setInterval(updatePosition, 1500);
-        setInterval(updateFeed, 1000);
+        setInterval(updateFeed, 400);
+        setInterval(syncScenarioState, 2000);
+        // Fine-grained timer tick between 400 ms feed rebuilds
+        setInterval(() => {
+            if (analyzingStart === null) return;
+            const el = document.getElementById('analyzing-timer');
+            if (el) el.textContent = ((performance.now() - analyzingStart) / 1000).toFixed(1) + 's';
+        }, 100);
     </script>
 </body>
 </html>
