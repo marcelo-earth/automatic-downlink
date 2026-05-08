@@ -57,28 +57,29 @@ The triage engine will start polling SimSat for satellite images and analyzing t
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────┐
-│  SimSat (Satellite Simulator)                        │
-│  ┌─────────────┐  ┌──────────────────────────────┐   │
-│  │ Orbit Sim   │──│ Sentinel-2 / Mapbox Imagery  │   │
-│  └─────────────┘  └──────────────────────────────┘   │
-└──────────────────────────┬───────────────────────────┘
-                           │ REST API (:9005)
-┌──────────────────────────▼───────────────────────────┐
-│  Triage Engine (On-board Cascade)                    │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │ Prefilter → VLM → Conservative decision layer   │ │
-│  │ Rejects junk → describes scene → assigns        │ │
-│  │ hazard priority → chooses downlink action        │ │
-│  └─────────────────────────────────────────────────┘ │
-│  Prompt profiles: default | disaster                 │
-└──────────────────────────┬───────────────────────────┘
-                           │
-┌──────────────────────────▼───────────────────────────┐
-│  Ground Station Dashboard (:8080)                    │
-│  Live triage feed, bandwidth savings, priority stats │
-└──────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph SimSat["SimSat — Satellite Simulator :9005"]
+        orbit["Orbit Simulator"]
+        imagery["Sentinel-2 / Mapbox Imagery"]
+        orbit --> imagery
+    end
+
+    subgraph Engine["Triage Engine — On-board Cascade"]
+        prefilter["Prefilter\nrejects blank / cloud tiles"]
+        vlm["LFM2.5-VL-450M\nfine-tuned on satellite imagery"]
+        decision["Decision Layer\nCRITICAL / HIGH / MEDIUM / LOW / SKIP"]
+        prefilter --> vlm --> decision
+    end
+
+    subgraph Dashboard["Ground Station Dashboard :8080"]
+        feed["Live triage feed"]
+        stats["Bandwidth savings · Priority distribution"]
+    end
+
+    imagery -->|"REST API"| prefilter
+    decision -->|"downlink decisions"| feed
+    decision --> stats
 ```
 
 ## Model & Weights
