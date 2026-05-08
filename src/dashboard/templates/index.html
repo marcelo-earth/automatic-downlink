@@ -159,6 +159,16 @@
             </div>
 
             <div class="stat-card">
+                <div class="label">Next Capture</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+                    <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+                        <div id="countdown-bar" style="height:100%;background:var(--accent);border-radius:2px;width:100%;transition:width 1s linear;"></div>
+                    </div>
+                    <div id="countdown-text" style="font-size:13px;font-weight:600;color:var(--accent);min-width:32px;text-align:right;">--</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
                 <div class="label">Priority Distribution</div>
                 <div class="priority-bars" id="priority-bars"></div>
             </div>
@@ -306,6 +316,35 @@
                 document.getElementById('feed-content').innerHTML = feedHtml;
             } catch(e) {}
         }
+
+        // Countdown timer
+        let pollInterval = 10;
+        let lastDecisionCount = 0;
+        let captureAt = Date.now() + pollInterval * 1000;
+
+        function tickCountdown() {
+            const remaining = Math.max(0, Math.round((captureAt - Date.now()) / 1000));
+            const pct = Math.min(100, (remaining / pollInterval) * 100);
+            document.getElementById('countdown-text').textContent =
+                remaining === 0 ? 'now' : remaining + 's';
+            document.getElementById('countdown-bar').style.width = pct + '%';
+        }
+
+        async function checkNewDecision() {
+            try {
+                const r = await fetch('/api/stats');
+                const stats = await r.json();
+                if (stats.poll_interval) pollInterval = stats.poll_interval;
+                if (stats.total_images > lastDecisionCount) {
+                    lastDecisionCount = stats.total_images;
+                    captureAt = Date.now() + pollInterval * 1000;
+                }
+            } catch(e) {}
+        }
+
+        tickCountdown();
+        setInterval(tickCountdown, 1000);
+        setInterval(checkNewDecision, 3000);
 
         updatePosition();
         updateFeed();

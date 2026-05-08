@@ -147,4 +147,5 @@ def _compute_stats() -> dict:
         "savings_percent": round(savings, 1),
         "critical_count": by_priority.get("CRITICAL", 0),
         "high_count": by_priority.get("HIGH", 0),
+        "poll_interval": POLL_INTERVAL,
     }
