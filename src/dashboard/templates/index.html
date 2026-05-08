@@ -98,6 +98,10 @@
             width: 80px; height: 80px; border-radius: 6px; object-fit: cover;
             border: 1px solid var(--border); flex-shrink: 0;
         }
+        .decision .thumb-col {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 6px; flex-shrink: 0;
+        }
         .decision .badge {
             font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
             white-space: nowrap; min-width: 65px; text-align: center;
@@ -107,6 +111,14 @@
         .badge.MEDIUM { background: var(--medium); color: #1a1a1a; }
         .badge.LOW { background: var(--low); color: white; }
         .badge.SKIP { background: var(--skip); color: var(--text-dim); }
+        .badge.ANALYZING {
+            background: var(--high); color: white;
+            animation: pulse 1.2s infinite;
+        }
+        .decision.analyzing {
+            border-color: var(--high);
+            box-shadow: 0 0 0 1px var(--high), 0 0 16px rgba(249,115,22,0.15);
+        }
         .decision .content { flex: 1; }
         .decision .desc { font-size: 13px; line-height: 1.4; margin-bottom: 4px; }
         .decision .meta { font-size: 11px; color: var(--text-dim); }
@@ -129,7 +141,17 @@
 <body>
     <div class="header">
         <h1>automatic-downlink <span style="color: var(--text-dim); font-weight: 400;">/ ground station</span></h1>
-        <div class="status"><span class="dot"></span><span id="status-text">Monitoring orbit</span></div>
+        <div style="display:flex;align-items:center;gap:16px;">
+            <select id="scenario-select" style="
+                background: var(--surface); color: var(--text);
+                border: 1px solid var(--border); border-radius: 6px;
+                padding: 6px 10px; font-family: inherit; font-size: 12px;
+                cursor: pointer;
+            ">
+                <option value="off">Demo mode — cycling sites</option>
+            </select>
+            <div class="status"><span class="dot"></span><span id="status-text">Monitoring orbit</span></div>
+        </div>
     </div>
 
     <div class="grid">
@@ -138,11 +160,6 @@
                 <div class="label">Satellite Position</div>
                 <div id="map"></div>
                 <div class="sat-coords" id="sat-coords">Waiting for telemetry...</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="label">Images Analyzed</div>
-                <div class="value" id="stat-total">0</div>
             </div>
 
             <div class="stat-card">
@@ -155,16 +172,6 @@
                 <div class="value" style="color: var(--critical)" id="stat-critical">0</div>
                 <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">
                     + <span id="stat-high">0</span> high priority
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="label">Next Capture</div>
-                <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
-                    <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-                        <div id="countdown-bar" style="height:100%;background:var(--accent);border-radius:2px;width:100%;transition:width 1s linear;"></div>
-                    </div>
-                    <div id="countdown-text" style="font-size:13px;font-weight:600;color:var(--accent);min-width:32px;text-align:right;">--</div>
                 </div>
             </div>
 
@@ -191,7 +198,7 @@
             attributionControl: false, dragging: false,
             scrollWheelZoom: false, doubleClickZoom: false,
         });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 18
         }).addTo(map);
 
@@ -231,30 +238,65 @@
                     document.getElementById('sat-coords').textContent =
                         `${pos.lat.toFixed(2)}, ${pos.lon.toFixed(2)} — ${pos.alt.toFixed(0)} km`;
                     document.getElementById('status-text').textContent = 'Tracking live orbit';
+                    return;
+                }
+                // Not live → in demo or scenario mode; track the satellite over the
+                // location currently being analyzed, with a trail across recent sites.
+                const [curR, decR] = await Promise.all([
+                    fetch('/api/current'),
+                    fetch('/api/decisions?limit=20'),
+                ]);
+                const current = await curR.json();
+                const decisions = await decR.json();
+                const coords = document.getElementById('sat-coords');
+
+                let activeLat = null, activeLon = null, activeName = null;
+                if (current && typeof current.position?.lat === 'number') {
+                    activeLat = current.position.lat;
+                    activeLon = current.position.lon;
+                    activeName = current.location_name;
+                } else if (decisions.length) {
+                    const last = decisions[decisions.length - 1];
+                    activeLat = last.position.lat;
+                    activeLon = last.position.lon;
+                    activeName = last.location_name;
+                }
+
+                if (activeLat !== null) {
+                    satMarker.setLatLng([activeLat, activeLon]);
+                    coords.textContent = activeName || `${activeLat.toFixed(2)}, ${activeLon.toFixed(2)}`;
+                    coords.style.color = 'var(--text)';
                 } else {
-                    document.getElementById('status-text').textContent = 'Demo mode';
-                    // Show last analyzed location in sidebar
-                    const coords = document.getElementById('sat-coords');
-                    const dec = await fetch('/api/decisions?limit=1').then(r=>r.json()).catch(()=>[]);
-                    if (dec.length && dec[0].location_name) {
-                        coords.textContent = dec[0].location_name;
-                        coords.style.color = 'var(--text)';
-                    } else {
-                        coords.textContent = 'Demo mode — cycling disaster sites';
+                    coords.textContent = 'Waiting for first capture…';
+                }
+
+                // Trail = path through recent decision positions (deduplicated for scenario mode)
+                const path = [];
+                let prevKey = null;
+                for (const d of decisions) {
+                    const key = `${d.position.lat.toFixed(3)},${d.position.lon.toFixed(3)}`;
+                    if (key !== prevKey) {
+                        path.push([d.position.lat, d.position.lon]);
+                        prevKey = key;
                     }
                 }
+                if (activeLat !== null) path.push([activeLat, activeLon]);
+                trail.setLatLngs(path);
+
+                document.getElementById('status-text').textContent =
+                    decisions.length > 0 ? 'Tracking analysis path' : 'Demo mode';
             } catch(e) {}
         }
 
         async function updateFeed() {
             try {
-                const [statsR, decisionsR] = await Promise.all([
-                    fetch('/api/stats'), fetch('/api/decisions?limit=50')
+                const [statsR, decisionsR, currentR] = await Promise.all([
+                    fetch('/api/stats'), fetch('/api/decisions?limit=50'), fetch('/api/current')
                 ]);
                 const stats = await statsR.json();
                 const decisions = await decisionsR.json();
+                const current = await currentR.json();
 
-                document.getElementById('stat-total').textContent = stats.total_images;
                 document.getElementById('stat-savings').textContent = stats.savings_percent + '%';
                 document.getElementById('stat-critical').textContent = stats.critical_count;
                 document.getElementById('stat-high').textContent = stats.high_count;
@@ -270,6 +312,14 @@
                     </div>`;
                 }).join('');
                 document.getElementById('priority-bars').innerHTML = barsHtml;
+
+                // Detect a reset (decisions cleared by backend, e.g. scenario change)
+                if (decisions.length < markerCount) {
+                    decisionMarkers.clearLayers();
+                    markerCount = 0;
+                    trailPoints.length = 0;
+                    trail.setLatLngs([]);
+                }
 
                 if (decisions.length === 0) return;
 
@@ -294,8 +344,43 @@
                     }
                 }
 
-                const reversed = [...decisions].reverse();
-                const feedHtml = reversed.map(d => {
+                // Ghost row for image currently being analyzed
+                let analyzingHtml = '';
+                if (current && current.location_name) {
+                    const thumb = current.image_b64
+                        ? `<img class="thumb" src="data:image/jpeg;base64,${current.image_b64}" alt="Analyzing">`
+                        : '';
+                    const pos = current.position
+                        ? ` &middot; ${current.position.lat.toFixed(2)}, ${current.position.lon.toFixed(2)}`
+                        : '';
+                    analyzingHtml = `<div class="decision analyzing">
+                        <div class="thumb-col">
+                            ${thumb}
+                            <span class="badge ANALYZING">ANALYZING</span>
+                        </div>
+                        <div class="content">
+                            <div class="desc">Reading RGB and SWIR channels — model is generating triage decision...</div>
+                            <div class="meta"><span style="color:var(--accent);font-weight:600;">${current.location_name}</span>${pos}</div>
+                        </div>
+                    </div>`;
+                }
+
+                const fmtMonth = (iso) => {
+                    if (!iso) return '';
+                    const dt = new Date(iso);
+                    return dt.toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+                };
+                // In scenario mode → chronological (oldest event date first, story reads top→bottom).
+                // In demo mode → newest-decision-first (live feed feel).
+                const isScenarioMode = decisions.length > 0 && decisions[0].scenario_frame;
+                const ordered = isScenarioMode
+                    ? [...decisions].sort((a, b) => {
+                        const ai = a.scenario_frame?.index ?? 0;
+                        const bi = b.scenario_frame?.index ?? 0;
+                        return ai - bi;
+                    })
+                    : [...decisions].reverse();
+                const feedHtml = ordered.map(d => {
                     const thumbHtml = d.image_b64
                         ? `<img class="thumb" src="data:image/jpeg;base64,${d.image_b64}" alt="Satellite image">`
                         : '';
@@ -303,53 +388,80 @@
                     const locHtml = d.location_name
                         ? `<span style="color:var(--accent);font-weight:600;">${d.location_name}</span> &middot; `
                         : '';
+                    const frameDate = d.scenario_frame?.timestamp
+                        ? `<span style="color:var(--medium);font-weight:600;">📅 ${fmtMonth(d.scenario_frame.timestamp)}</span> &middot; `
+                        : '';
                     return `<div class="decision">
-                        ${thumbHtml}
-                        <span class="badge ${d.priority}">${d.priority}</span>
+                        <div class="thumb-col">
+                            ${thumbHtml}
+                            <span class="badge ${d.priority}">${d.priority}</span>
+                        </div>
                         <div class="content">
                             <div class="desc">${d.description}</div>
-                            <div class="meta">${locHtml}${d.image_id} &middot; ${d.source} &middot; ${d.position.lat.toFixed(2)}, ${d.position.lon.toFixed(2)}</div>
+                            <div class="meta">${frameDate}${locHtml}${d.position.lat.toFixed(2)}, ${d.position.lon.toFixed(2)}</div>
                             ${cats ? `<div class="categories">${cats}</div>` : ''}
                         </div>
                     </div>`;
                 }).join('');
-                document.getElementById('feed-content').innerHTML = feedHtml;
+                document.getElementById('feed-content').innerHTML = analyzingHtml + feedHtml;
             } catch(e) {}
         }
 
-        // Countdown timer
-        let pollInterval = 10;
-        let lastDecisionCount = 0;
-        let captureAt = Date.now() + pollInterval * 1000;
-
-        function tickCountdown() {
-            const remaining = Math.max(0, Math.round((captureAt - Date.now()) / 1000));
-            const pct = Math.min(100, (remaining / pollInterval) * 100);
-            document.getElementById('countdown-text').textContent =
-                remaining === 0 ? 'now' : remaining + 's';
-            document.getElementById('countdown-bar').style.width = pct + '%';
-        }
-
-        async function checkNewDecision() {
+        // Scenario selector
+        async function loadScenarios() {
             try {
-                const r = await fetch('/api/stats');
-                const stats = await r.json();
-                if (stats.poll_interval) pollInterval = stats.poll_interval;
-                if (stats.total_images > lastDecisionCount) {
-                    lastDecisionCount = stats.total_images;
-                    captureAt = Date.now() + pollInterval * 1000;
+                const r = await fetch('/api/scenarios');
+                const data = await r.json();
+                const sel = document.getElementById('scenario-select');
+                // Preserve the "off" option, add scenarios after
+                sel.innerHTML = '<option value="off">Demo mode — cycling sites</option>';
+                const featured = data.scenarios.filter(s => s.featured);
+                const others = data.scenarios.filter(s => !s.featured);
+                if (featured.length) {
+                    const grp = document.createElement('optgroup');
+                    grp.label = '⭐ Featured (curated timelines)';
+                    for (const s of featured) {
+                        const opt = document.createElement('option');
+                        opt.value = s.key;
+                        opt.textContent = `${s.name} — ${s.frame_count} frames`;
+                        grp.appendChild(opt);
+                    }
+                    sel.appendChild(grp);
                 }
+                if (others.length) {
+                    const grp = document.createElement('optgroup');
+                    grp.label = 'Other scenarios';
+                    for (const s of others) {
+                        const opt = document.createElement('option');
+                        opt.value = s.key;
+                        opt.textContent = `${s.name} — ${s.frame_count} frames`;
+                        grp.appendChild(opt);
+                    }
+                    sel.appendChild(grp);
+                }
+                if (data.active_key) sel.value = data.active_key;
             } catch(e) {}
         }
 
-        tickCountdown();
-        setInterval(tickCountdown, 1000);
-        setInterval(checkNewDecision, 3000);
+        document.getElementById('scenario-select').addEventListener('change', async (e) => {
+            const key = e.target.value;
+            await fetch(`/api/scenarios/${key}`, { method: 'POST' });
+            // Force immediate refresh of both panels — don't wait for next interval
+            decisionMarkers.clearLayers();
+            markerCount = 0;
+            trailPoints.length = 0;
+            trail.setLatLngs([]);
+            document.getElementById('feed-content').innerHTML =
+                '<div class="empty-state"><h2>Loading new sequence…</h2><p>Waiting for first frame.</p></div>';
+            await Promise.all([updateFeed(), updatePosition()]);
+        });
+
+        loadScenarios();
 
         updatePosition();
         updateFeed();
-        setInterval(updatePosition, 3000);
-        setInterval(updateFeed, 5000);
+        setInterval(updatePosition, 1500);
+        setInterval(updateFeed, 1000);
     </script>
 </body>
 </html>

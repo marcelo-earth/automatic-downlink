@@ -23,8 +23,10 @@ logger = logging.getLogger(__name__)
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 STATIC_DIR = Path(__file__).parent / "static"
 
-# In-memory store — shared between dashboard routes and triage loop
+# In-memory stores — shared between dashboard routes and triage loop
 _decisions: list[dict] = []
+_current_analysis: dict = {}  # populated while inference is running
+_scenario_state: dict = {"active_key": None, "frame_index": 0}
 
 # Environment config
 SIMSAT_URL = os.environ.get("SIMSAT_URL", "")
@@ -45,6 +47,8 @@ async def lifespan(app: FastAPI):
                 decisions_store=_decisions,
                 poll_interval=POLL_INTERVAL,
                 profile=TRIAGE_PROFILE,
+                current_analysis=_current_analysis,
+                scenario_state=_scenario_state,
             )
         )
     else:
@@ -87,6 +91,40 @@ async def get_decisions(limit: int = 50):
 @app.get("/api/stats")
 async def get_stats():
     return _compute_stats()
+
+
+@app.get("/api/current")
+async def get_current():
+    """Return image+location currently being analyzed, or empty {} if idle."""
+    return _current_analysis
+
+
+@app.get("/api/scenarios")
+async def get_scenarios():
+    """List available temporal-replay scenarios."""
+    from src.triage.scenarios import list_scenarios
+    return {
+        "scenarios": list_scenarios(),
+        "active_key": _scenario_state.get("active_key"),
+    }
+
+
+@app.post("/api/scenarios/{key}")
+async def set_scenario(key: str):
+    """Activate a scenario, or 'off' to return to demo cycling."""
+    from src.triage.scenarios import SCENARIOS
+    if key == "off":
+        _scenario_state["active_key"] = None
+        _scenario_state["frame_index"] = 0
+        return {"status": "ok", "active_key": None}
+    if key not in SCENARIOS:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=f"Unknown scenario: {key}")
+    _scenario_state["active_key"] = key
+    _scenario_state["frame_index"] = 0
+    # Clear old decisions so timeline starts clean
+    _decisions.clear()
+    return {"status": "ok", "active_key": key}
 
 
 @app.get("/api/position")

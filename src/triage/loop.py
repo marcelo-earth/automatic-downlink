@@ -42,6 +42,8 @@ async def run_triage_loop(
     decisions_store: list[dict],
     poll_interval: float = POLL_INTERVAL,
     profile: str = "default",
+    current_analysis: dict | None = None,
+    scenario_state: dict | None = None,
 ) -> None:
     """Run the triage loop forever, appending decisions to the shared store."""
     logger.info("Triage loop starting — loading model...")
@@ -59,7 +61,7 @@ async def run_triage_loop(
     while True:
         try:
             decision_dict, demo_index = await asyncio.to_thread(
-                _fetch_and_triage, client, engine, demo_index
+                _fetch_and_triage, client, engine, demo_index, current_analysis, scenario_state
             )
             if decision_dict is not None:
                 decisions_store.append(decision_dict)
@@ -91,11 +93,17 @@ def _fetch_and_triage(
     client: SimSatClient,
     engine: TriageEngine,
     demo_index: int,
+    current_analysis: dict | None = None,
+    scenario_state: dict | None = None,
 ) -> tuple[dict | None, int]:
     """Fetch one image from SimSat and triage it. Runs in a thread.
 
     Returns (decision_dict_or_None, next_demo_index).
     """
+    # Scenario replay mode takes priority over both live and demo cycling
+    if scenario_state and scenario_state.get("active_key"):
+        return _fetch_and_triage_scenario(client, engine, scenario_state, current_analysis), demo_index
+
     # Try live simulation position first
     position = client.get_position()
     is_live = position.lat != 0.0 or position.lon != 0.0 or position.alt != 0.0
@@ -137,18 +145,92 @@ def _fetch_and_triage(
         logger.info("No Sentinel-2 image for %s, skipping.", name)
         return None, next_index
 
+    # Publish "currently analyzing" state so dashboard can show a ghost row
+    if current_analysis is not None:
+        current_analysis.clear()
+        current_analysis["location_name"] = name
+        current_analysis["image_b64"] = _image_to_b64(result.image)
+        current_analysis["position"] = {"lat": lat, "lon": lon}
+
     timestamp = datetime.now(timezone.utc).isoformat()
-    decision = engine.analyze(
-        image=result.image,
-        timestamp=timestamp,
-        position={"lat": lat, "lon": lon, "alt": 550.0},
-        source="sentinel-2",
-        swir_image=swir_result.image if swir_result and swir_result.image else None,
-    )
+    try:
+        decision = engine.analyze(
+            image=result.image,
+            timestamp=timestamp,
+            position={"lat": lat, "lon": lon, "alt": 550.0},
+            source="sentinel-2",
+            swir_image=swir_result.image if swir_result and swir_result.image else None,
+        )
+    finally:
+        if current_analysis is not None:
+            current_analysis.clear()
+
     d = decision.model_dump(mode="json")
     d["image_b64"] = _image_to_b64(result.image)
     d["location_name"] = name
     return d, next_index
+
+
+def _fetch_and_triage_scenario(
+    client: SimSatClient,
+    engine: TriageEngine,
+    scenario_state: dict,
+    current_analysis: dict | None,
+) -> dict | None:
+    """Fetch and triage a single frame of an active scenario timeline."""
+    from src.triage.scenarios import SCENARIOS
+
+    key = scenario_state["active_key"]
+    scenario = SCENARIOS.get(key)
+    if scenario is None:
+        scenario_state["active_key"] = None
+        return None
+
+    frame_idx = scenario_state.get("frame_index", 0) % len(scenario.frames)
+    frame = scenario.frames[frame_idx]
+    scenario_state["frame_index"] = frame_idx + 1
+
+    full_name = f"{scenario.name} — {frame.label}"
+    logger.info("Scenario: %s @ %s", full_name, frame.timestamp)
+
+    result = client.get_sentinel_historical(
+        lon=scenario.lon, lat=scenario.lat, timestamp=frame.timestamp
+    )
+    swir_result = client.get_sentinel_historical(
+        lon=scenario.lon, lat=scenario.lat, timestamp=frame.timestamp,
+        spectral_bands=["swir16", "nir08", "red"],
+    )
+
+    if result.image is None:
+        logger.info("No Sentinel-2 image for %s, skipping frame.", full_name)
+        return None
+
+    if current_analysis is not None:
+        current_analysis.clear()
+        current_analysis["location_name"] = full_name
+        current_analysis["image_b64"] = _image_to_b64(result.image)
+        current_analysis["position"] = {"lat": scenario.lat, "lon": scenario.lon}
+        current_analysis["frame_timestamp"] = frame.timestamp
+        current_analysis["frame_label"] = frame.label
+
+    timestamp = datetime.now(timezone.utc).isoformat()
+    try:
+        decision = engine.analyze(
+            image=result.image,
+            timestamp=timestamp,
+            position={"lat": scenario.lat, "lon": scenario.lon, "alt": 550.0},
+            source="sentinel-2",
+            swir_image=swir_result.image if swir_result and swir_result.image else None,
+        )
+    finally:
+        if current_analysis is not None:
+            current_analysis.clear()
+
+    d = decision.model_dump(mode="json")
+    d["image_b64"] = _image_to_b64(result.image)
+    d["location_name"] = full_name
+    d["scenario_frame"] = {"label": frame.label, "timestamp": frame.timestamp, "index": frame_idx}
+    return d
 
 
 def _image_to_b64(image: Image.Image, size: int = 128) -> str:
