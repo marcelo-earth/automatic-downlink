@@ -4,6 +4,8 @@
 
 **AI in Space Hackathon** (Liquid AI x DPhi Space) | Liquid Track | April-May 2026
 
+![Ground Station Dashboard](fig/dashboard.png)
+
 ## The Problem
 
 Satellites capture far more imagery than they can transmit during a ground-station pass.
