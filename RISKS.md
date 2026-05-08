@@ -5,7 +5,7 @@
 **Impact:** Can't fine-tune specifically on triage classification (CRITICAL/HIGH/SKIP)
 
 **Mitigation:**
-- Fine-tune on VRSBench (satellite captioning, 204K samples) — model learns to describe satellite images
+- Fine-tune on VRSBench (satellite captioning, 204K samples) - model learns to describe satellite images
 - Triage logic lives in the system prompt, not the training data: "Given your description, classify priority as..."
 - The VLM's strength is reasoning from descriptions, not memorizing labels
 - If time permits, create a small synthetic triage dataset (100-500 samples) using Claude to label SimSat images
@@ -48,7 +48,7 @@
 **Impact:** Can't complete fine-tuning or need to pay
 
 **Mitigation:**
-- LFM2.5-VL-450M is tiny (450M params) — trains fast on H100
+- LFM2.5-VL-450M is tiny (450M params) - trains fast on H100
 - Modal docs say $30 is "enough to run this example end to end"
 - Start with small training run (500 samples) to estimate cost before full run
 - Fallback: use LoRA (parameter-efficient fine-tuning) to reduce compute
@@ -65,7 +65,7 @@
 **Mitigation:**
 - Pre-fetch and cache a diverse set of images for the demo
 - Include both cached demo mode and live API mode
-- Sentinel-2 is documented as slow — use Mapbox for real-time demo, Sentinel for pre-fetched analysis
+- Sentinel-2 is documented as slow - use Mapbox for real-time demo, Sentinel for pre-fetched analysis
 
 **Status:** Needs testing when SimSat is running
 
@@ -73,7 +73,7 @@
 
 ## Risk 6: Model hallucinations on satellite imagery
 **Severity:** LOW-MEDIUM
-**Impact:** Model says "flooding detected" when there's no flooding — undermines credibility
+**Impact:** Model says "flooding detected" when there's no flooding - undermines credibility
 
 **Mitigation:**
 - Fine-tuning on satellite-specific data reduces hallucinations
@@ -105,4 +105,4 @@ If fine-tuning fails completely:
 1. Use base LFM2.5-VL-450M with crafted system prompt
 2. Focus on the pipeline, integration, and demo quality
 3. Emphasize the architecture and product vision over model performance
-4. Still a viable submission — judges value innovation (35%) and demo (20%) over pure model quality
+4. Still a viable submission - judges value innovation (35%) and demo (20%) over pure model quality

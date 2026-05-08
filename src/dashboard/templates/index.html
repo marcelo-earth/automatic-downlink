@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>automatic-downlink — Ground Station</title>
+    <title>automatic-downlink - Ground Station</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -170,7 +170,7 @@
                 padding: 6px 10px; font-family: inherit; font-size: 12px;
                 cursor: pointer;
             ">
-                <option value="off">Demo mode — cycling sites</option>
+                <option value="off">Demo mode - cycling sites</option>
             </select>
             <div class="status"><span class="dot"></span><span id="status-text">Monitoring orbit</span></div>
         </div>
@@ -287,7 +287,7 @@
                     if (trailPoints.length > 200) trailPoints.shift();
                     trail.setLatLngs(trailPoints);
                     document.getElementById('sat-coords').textContent =
-                        `${pos.lat.toFixed(2)}, ${pos.lon.toFixed(2)} — ${pos.alt.toFixed(0)} km`;
+                        `${pos.lat.toFixed(2)}, ${pos.lon.toFixed(2)} - ${pos.alt.toFixed(0)} km`;
                     document.getElementById('status-text').textContent = 'Tracking live orbit';
                     return;
                 }
@@ -360,7 +360,7 @@
                         </div>`;
                     }).join('');
 
-                // Map markers — incremental; reset when backend cleared the store
+                // Map markers - incremental; reset when backend cleared the store
                 const wasReset = decisions.length < markerCount;
                 if (wasReset) {
                     decisionMarkers.clearLayers();
@@ -375,7 +375,7 @@
                         const m = L.marker([d.position.lat, d.position.lon],
                             { icon: makeDecisionIcon(d.priority) });
                         const loc = d.location_name ? escapeHtml(d.location_name) + '\n' : '';
-                        m.bindTooltip(`${d.priority} — ${loc}${escapeHtml(d.description.slice(0, 60))}…`,
+                        m.bindTooltip(`${d.priority} - ${loc}${escapeHtml(d.description.slice(0, 60))}…`,
                             { className: 'dark-tooltip' });
                         decisionMarkers.addLayer(m);
                     }
@@ -384,7 +384,7 @@
                     if (pts.length > 1) map.fitBounds(L.latLngBounds(pts).pad(0.2));
                 }
 
-                // Analyzing ghost row — always refreshed (streaming description + timer)
+                // Analyzing ghost row - always refreshed (streaming description + timer)
                 const analyzingEl = document.getElementById('analyzing-row');
                 if (current && current.location_name) {
                     const key = current.location_name + '|' + (current.frame_timestamp || '');
@@ -422,7 +422,7 @@
                     analyzingStart = null;
                 }
 
-                // Decisions feed — only rebuilt when count changes (avoids re-decoding 50 base64 images/400ms)
+                // Decisions feed - only rebuilt when count changes (avoids re-decoding 50 base64 images/400ms)
                 const feedEl = document.getElementById('decisions-feed');
                 if (decisions.length !== renderedCount || wasReset) {
                     if (decisions.length === 0) {
@@ -488,7 +488,7 @@
                 const r = await fetch('/api/scenarios');
                 const data = await r.json();
                 const sel = document.getElementById('scenario-select');
-                sel.innerHTML = '<option value="paused">— Model off —</option><option value="off">Demo mode — cycling sites</option>';
+                sel.innerHTML = '<option value="paused">-Model off-</option><option value="off">Demo mode - cycling sites</option>';
                 const addGroup = (label, items) => {
                     const grp = document.createElement('optgroup');
                     grp.label = label;
@@ -496,7 +496,7 @@
                         scenarioIndex[s.key] = s;
                         const o = document.createElement('option');
                         o.value = s.key;
-                        o.textContent = `${s.name} — ${s.frame_count} frames`;
+                        o.textContent = `${s.name} - ${s.frame_count} frames`;
                         grp.appendChild(o);
                     });
                     sel.appendChild(grp);
@@ -543,7 +543,7 @@
                 const serverPaused = data.paused ?? true;
                 const serverKey = data.active_key || (serverPaused ? 'paused' : 'off');
                 if (serverPaused && !modelPaused) {
-                    // Scenario ended server-side — sync dropdown and clear feed
+                    // Scenario ended server-side - sync dropdown and clear feed
                     modelPaused = true;
                     sel.value = 'paused';
                     analyzingKey = null;

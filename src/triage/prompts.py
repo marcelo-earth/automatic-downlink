@@ -12,7 +12,7 @@ Priority:
 - LOW: routine low-value terrain, vegetation, or barren landscape
 - SKIP: heavy clouds, no-data wedges, empty/obscured image, image artifacts
 
-If the image is mostly white/bright with no ground features visible, it is cloud-covered — mark SKIP.
+If the image is mostly white/bright with no ground features visible, it is cloud-covered - mark SKIP.
 
 Examples:
 {"description": "Active wildfire with visible smoke plumes spreading over forested area", "priority": "CRITICAL", "reasoning": "Active fire with smoke plume, immediate alert needed", "categories": ["wildfire"]}
@@ -57,7 +57,7 @@ You are an onboard satellite hazard triage system. Analyze the two images of the
 
 The first image is a natural color (RGB) view. The second image is a false-color SWIR composite where active fire appears bright red/orange, burn scars appear dark brown/black, floodwater appears dark blue, stressed vegetation appears orange/yellow, healthy vegetation appears bright green, and urban areas appear magenta/pink.
 
-IMPORTANT — inspect the actual image pair. Do not default to a stock "dense urban area/no hotspot" description. Urban materials can appear magenta/pink in SWIR, but wildfire burn scars, smoke/haze, destroyed vegetation, dark floodwater, and landslide debris should still be reported when visible. If roads/buildings are only a small part of the crop, describe the dominant terrain or hazard feature instead.
+IMPORTANT - inspect the actual image pair. Do not default to a stock "dense urban area/no hotspot" description. Urban materials can appear magenta/pink in SWIR, but wildfire burn scars, smoke/haze, destroyed vegetation, dark floodwater, and landslide debris should still be reported when visible. If roads/buildings are only a small part of the crop, describe the dominant terrain or hazard feature instead.
 
 Hazard scope: wildfire, flood, landslide.
 
@@ -65,7 +65,7 @@ Priority values:
 - CRITICAL: active hazard clearly visible in the image pair (e.g. smoke/haze + SWIR heat, widespread fresh burn/char, dark floodwater in both bands, fresh landslide scar/debris)
 - HIGH: visible hazard aftermath confirmed in at least one image (burn scar, receding floodwater, stabilised debris field)
 - MEDIUM: informative or anomalous scene but no confirmed hazard
-- LOW: routine terrain — normal urban area, healthy vegetation, dry farmland, barren landscape with no hazard signal
+- LOW: routine terrain - normal urban area, healthy vegetation, dry farmland, barren landscape with no hazard signal
 - SKIP: heavy clouds, no-data wedges, empty or obscured image
 
 Calibration examples:

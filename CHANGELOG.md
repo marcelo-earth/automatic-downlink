@@ -21,11 +21,11 @@
 
 - Cleared ghost container state (`docker system prune -f`) that was blocking `docker compose up`.
 - All 3 services started successfully:
-  - `simsat-dashboard` (:8000) — healthy
-  - `simsat-api` (:9005) — up
-  - `triage-dashboard` (:8080) — up
+  - `simsat-dashboard` (:8000) - healthy
+  - `simsat-api` (:9005) - up
+  - `triage-dashboard` (:8080) - up
 - LFM2.5-VL-450M v6d loaded on CPU in ~34 seconds (350 weight shards).
-- First inference ran immediately: `IMG_0144FE30 → SKIP` (correct — cloudy image).
+- First inference ran immediately: `IMG_0144FE30 → SKIP` (correct - cloudy image).
 - `GET /` → HTTP 200. `GET /api/stats` → valid JSON `{"total_images":1,"SKIP":1,"savings_percent":99.8}`.
 - **Smoke test: PASS.** `docker compose up` works end-to-end.
 
@@ -41,7 +41,7 @@
 
 #### Scope: oil spill removed
 
-- Removed oil spill from hazard scope — no clean positive eval examples existed (both oil spill candidates were cloud-blown SKIP), and only 9 training samples.
+- Removed oil spill from hazard scope - no clean positive eval examples existed (both oil spill candidates were cloud-blown SKIP), and only 9 training samples.
 - Updated `PRIORITY_POLICY.md`, `DETECTION_CAPABILITIES.md`, `src/triage/prompts.py`, `scripts/labeling_prompt.md`, `README.md`.
 - Removed `MARITIME_MODE_SYSTEM_PROMPT` and `maritime` prompt profile entirely.
 - Hazard scope is now: **wildfire, flood, landslide**.
@@ -49,9 +49,9 @@
 #### v6c eval results
 
 - Checkpoint: `LFM2.5-VL-450M-vlm_sft-exp6_train-…-20260430_053227` (e4s16)
-- **Overall: 6/11 (55%)** — no improvement over v6b.
-- **CRITICAL: 0/4** — all four Valencia flood tiles predicted MEDIUM.
-- MEDIUM recall 1.0 — model collapsed to MEDIUM for every non-trivial scene.
+- **Overall: 6/11 (55%)** - no improvement over v6b.
+- **CRITICAL: 0/4** - all four Valencia flood tiles predicted MEDIUM.
+- MEDIUM recall 1.0 - model collapsed to MEDIUM for every non-trivial scene.
 - Root cause: 22 MEDIUM samples (38.6%) dominated training despite 5x CRITICAL upsampling. The 450M model defaulted to MEDIUM as its safe prediction.
 
 #### v6d: CRITICAL-dominant rebalancing
@@ -70,19 +70,19 @@
 - `src/triage/model.py`: added `generate_dual(rgb, swir, …)` method alongside existing `generate()`.
 - `src/triage/engine.py`: `analyze()` now accepts optional `swir_image`; uses `TRIAGE_DUAL_SYSTEM_PROMPT` when SWIR is present, single-image prompt otherwise.
 - `src/triage/loop.py`: fetches SWIR companion (`["swir16","nir08","red"]`) alongside RGB for both live and demo modes.
-- Previously the fine-tuned model (trained on dual images) was receiving only one image at inference — this mismatch is now fixed.
+- Previously the fine-tuned model (trained on dual images) was receiving only one image at inference - this mismatch is now fixed.
 
 #### v6d eval results
 
-- **CRITICAL recall: 3/4 (75%)** — first time model detects active hazard events.
-- Overall accuracy: 4/11 (36%) — dropped because model now over-escalates flood-region tiles.
-- MEDIUM recall: 1/6 — model is recall-first (appropriate for disaster triage).
+- **CRITICAL recall: 3/4 (75%)** - first time model detects active hazard events.
+- Overall accuracy: 4/11 (36%) - dropped because model now over-escalates flood-region tiles.
+- MEDIUM recall: 1/6 - model is recall-first (appropriate for disaster triage).
 - Per-sample: correctly identified 2 active Valencia floods (Nov 1) and 1 flood aftermath (Nov 10). Missed one aftermath tile. False positives on pre-flood and flood-region non-flooded tiles.
 
 #### v6d pushed to HuggingFace
 
 - `marcelo-earth/LFM2.5-VL-450M-satellite-triage-v6`
-- Inference files only (1.03GB model.safetensors + configs) — optimizer states excluded.
+- Inference files only (1.03GB model.safetensors + configs) - optimizer states excluded.
 - `Dockerfile` updated to download v6 model at build time.
 - `src/triage/model.py` updated: default `MODEL_ID` → v6 repo, no pinned revision.
 
@@ -100,7 +100,7 @@
 
 ## 2026-04-30
 
-### Exp 6c — CRITICAL class fix via upsampling + retrain
+### Exp 6c - CRITICAL class fix via upsampling + retrain
 
 #### Problem diagnosed
 - v6b eval: 6/11 (55%) overall accuracy. CRITICAL recall = 0/4 (model predicted MEDIUM for all four Valencia 2024 flood tiles).
@@ -108,7 +108,7 @@
 
 #### Fix: CRITICAL upsampling in `prepare_exp6_dataset.py`
 - Added 5× repeat of CRITICAL training rows after the temporal split.
-- Result: 10 CRITICAL out of 57 training samples (17.5%) — proportional to real-world hazard importance.
+- Result: 10 CRITICAL out of 57 training samples (17.5%) - proportional to real-world hazard importance.
 - Explored leap-finetune source (`/leap-finetune/src/`) to confirm no built-in class weighting or upsampling exists in the YAML config layer; dataset-level duplication is the correct approach.
 
 #### Dataset regenerated + uploaded
@@ -122,7 +122,7 @@
 
 ## 2026-04-22
 
-### EXP 5/6 pivot — hazard-focused training data + v5 launch
+### EXP 5/6 pivot - hazard-focused training data + v5 launch
 
 #### Hazard event image capture
 - Started SimSat locally (dummy MAPBOX_ACCESS_TOKEN; we only need Sentinel)
@@ -134,8 +134,8 @@
 - Added 17 hazard samples to `evals/sentinel_eval_v1.jsonl` (28 → 45 samples)
 - First eval set covering all five priority levels (previous set had no CRITICAL/HIGH)
 - Baseline cascade eval (deterministic, decision layer ON): 34/45 match (75.6%)
-- **CRITICAL recall: 0/3** — all three active-hazard CRITICAL samples were predicted MEDIUM. Model never emits CRITICAL.
-- **HIGH recall: 1/2** — Lahaina wildfire correct, Tenerife downgraded to MEDIUM
+- **CRITICAL recall: 0/3** - all three active-hazard CRITICAL samples were predicted MEDIUM. Model never emits CRITICAL.
+- **HIGH recall: 1/2** - Lahaina wildfire correct, Tenerife downgraded to MEDIUM
 - SKIP/LOW/MEDIUM on routine scenes: ~86% correct; prefilter catches 19/19 of the unambiguous SKIPs
 
 #### Training data v5
@@ -153,11 +153,11 @@
 
 ## 2026-04-17
 
-### Fine-Tuning: Exp 1 — Model Working
+### Fine-Tuning: Exp 1 - Model Working
 
 #### Root cause analysis (MODEL_AUTORESEARCH.md)
-- Diagnosed why Exp 0 model produced garbage: 48% of training data was VQA one-word answers ("green", "Yes", "Ships") and bounding box tokens — not captions
-- Bug was in `_extract_caption()`: checked if `[caption]` was in GPT response (it never is — it's in the HUMAN prompt), so it extracted ALL GPT turns indiscriminately
+- Diagnosed why Exp 0 model produced garbage: 48% of training data was VQA one-word answers ("green", "Yes", "Ships") and bounding box tokens - not captions
+- Bug was in `_extract_caption()`: checked if `[caption]` was in GPT response (it never is - it's in the HUMAN prompt), so it extracted ALL GPT turns indiscriminately
 - Learning rate 2e-5 was also too low for LoRA (should be 1e-4 to 5e-4)
 
 #### Data fix
@@ -182,7 +182,7 @@
 
 - Uploaded to HuggingFace: `marcelo-earth/LFM2.5-VL-450M-satellite-triage`
 - Added model card with usage, training details, and evaluation
-- Docker image rebuilt with fine-tuned model — end-to-end tested, working
+- Docker image rebuilt with fine-tuned model - end-to-end tested, working
 - Dashboard now shows **94.8% bandwidth savings** (was 0% with base model)
 
 #### Other changes
@@ -199,8 +199,8 @@
 ### Research & Setup
 - Researched DPhi Space platform, Liquid AI models, and hackathon rules
 - Analyzed prior art: on-board satellite AI (PhiSat-1/2, OroraTech, RaVAEn, Planet Pelican-4), VLM captioning for remote sensing, edge AI in space
-- Key finding: nobody has deployed a general-purpose VLM for on-board image triage. Current systems use narrow CNNs (cloud detection, fire detection) — one model per task
-- Decided on idea: **Smart Downlink Triage** — VLM running on satellite that analyzes every image, describes it, and prioritizes what to downlink
+- Key finding: nobody has deployed a general-purpose VLM for on-board image triage. Current systems use narrow CNNs (cloud detection, fire detection) - one model per task
+- Decided on idea: **Smart Downlink Triage** - VLM running on satellite that analyzes every image, describes it, and prioritizes what to downlink
 - Track: **Liquid Track** (LFM2.5-VL-450M)
 
 ### Project Setup
@@ -220,28 +220,28 @@
 - [x] Python setup: `pyproject.toml` with uv, deps for core + dashboard + training + dev
 - [x] `.gitignore` (Python, model weights, data, IDE, Docker, Modal)
 - [x] `.env.example` (HF_TOKEN, MAPBOX_ACCESS_TOKEN, MODAL tokens)
-- [x] SimSat API client (`src/simsat/client.py`) — typed dataclasses for position, sentinel, mapbox responses. Health check. All 5 endpoints wrapped.
-- [x] Model inference wrapper (`src/triage/model.py`) — loads LFM2.5-VL-450M, supports CUDA/MPS (Apple Silicon)/CPU. Chat template with system + user + image, generation params from model card.
-- [x] Triage prompts (`src/triage/prompts.py`) — 3 prompt profiles: default, disaster mode, maritime mode. Prompt-steerable triage is a key differentiator.
-- [x] Output schemas (`src/triage/schemas.py`) — Pydantic models: TriageDecision (priority, description, reasoning, categories, downlink action), BandwidthStats, Priority enum, DownlinkAction enum.
-- [x] Triage engine (`src/triage/engine.py`) — orchestrates SimSat → VLM → JSON parsing → TriageDecision. Handles malformed JSON gracefully. Bandwidth savings calculator built in.
-- [x] Docker setup (`Dockerfile`, `docker-compose.yml`) — 3 services: simsat-dashboard, simsat-api, triage. Single `docker compose up` runs everything on ports 8000/9005/8080.
+- [x] SimSat API client (`src/simsat/client.py`) - typed dataclasses for position, sentinel, mapbox responses. Health check. All 5 endpoints wrapped.
+- [x] Model inference wrapper (`src/triage/model.py`) - loads LFM2.5-VL-450M, supports CUDA/MPS (Apple Silicon)/CPU. Chat template with system + user + image, generation params from model card.
+- [x] Triage prompts (`src/triage/prompts.py`) - 3 prompt profiles: default, disaster mode, maritime mode. Prompt-steerable triage is a key differentiator.
+- [x] Output schemas (`src/triage/schemas.py`) - Pydantic models: TriageDecision (priority, description, reasoning, categories, downlink action), BandwidthStats, Priority enum, DownlinkAction enum.
+- [x] Triage engine (`src/triage/engine.py`) - orchestrates SimSat → VLM → JSON parsing → TriageDecision. Handles malformed JSON gracefully. Bandwidth savings calculator built in.
+- [x] Docker setup (`Dockerfile`, `docker-compose.yml`) - 3 services: simsat-dashboard, simsat-api, triage. Single `docker compose up` runs everything on ports 8000/9005/8080.
 
 #### Decisions made
 - Docker: confirmed installed and running
-- GPU: Mac (Apple Silicon) — model wrapper updated with MPS support + float16
+- GPU: Mac (Apple Silicon) - model wrapper updated with MPS support + float16
 - Mapbox: no token yet, marked as OPTIONAL. Sentinel-2 works without it.
 - Project name: **automatic-downlink**
 
 - [x] Renamed project from `project-unnamed` to `automatic-downlink`
 - [x] Added SimSat as git submodule
-- [x] SimSat Docker tested — API responds, simulation runs, position tracking works
+- [x] SimSat Docker tested - API responds, simulation runs, position tracking works
 - [x] Fetched 4 test images from SimSat API:
-  - `sentinel_test1.png` — Lausanne, Switzerland (city + lake, 0% clouds)
-  - `sentinel_amazon.png` — Amazon (97% clouds, nearly all white)
-  - `sentinel_sahara.png` — Sahara desert (arid terrain, 18% clouds)
-  - `sentinel_lima.png` — Lima, Peru (90% clouds, partial city)
-  - Ocean test failed — Sentinel-2 doesn't cover open ocean (documented limitation)
+  - `sentinel_test1.png` - Lausanne, Switzerland (city + lake, 0% clouds)
+  - `sentinel_amazon.png` - Amazon (97% clouds, nearly all white)
+  - `sentinel_sahara.png` - Sahara desert (arid terrain, 18% clouds)
+  - `sentinel_lima.png` - Lima, Peru (90% clouds, partial city)
+  - Ocean test failed - Sentinel-2 doesn't cover open ocean (documented limitation)
 - [x] Python 3.11 venv created (system Python 3.9 too old for transformers 5.x)
 - [x] Base model inference tested (LFM2.5-VL-450M on MPS/Apple Silicon):
   - Model loads in ~2 seconds, inference ~10-15s per image
@@ -260,14 +260,14 @@
 - [x] Known limitation: Sahara→SKIP instead of LOW, Lausanne→HIGH with copied description. Fine-tuning expected to fix.
 
 #### Dashboard
-- [x] Built FastAPI dashboard (`src/dashboard/app.py`) — routes: GET / (HTML), GET/POST /api/decisions, GET /api/stats
-- [x] Dark theme ground station UI (`src/dashboard/templates/index.html`) — priority badges, stats cards, priority distribution bars, triage feed, auto-refresh 5s
+- [x] Built FastAPI dashboard (`src/dashboard/app.py`) - routes: GET / (HTML), GET/POST /api/decisions, GET /api/stats
+- [x] Dark theme ground station UI (`src/dashboard/templates/index.html`) - priority badges, stats cards, priority distribution bars, triage feed, auto-refresh 5s
 - [x] Fixed Starlette 1.0 TemplateResponse API change (request as first arg)
-- [x] Fixed enum serialization — `model_dump(mode="json")` so priority renders as "CRITICAL" not "Priority.CRITICAL"
+- [x] Fixed enum serialization - `model_dump(mode="json")` so priority renders as "CRITICAL" not "Priority.CRITICAL"
 - [x] Tested with sample data: badges, stats, bandwidth savings all render correctly
 
 #### Triage Loop (end-to-end pipeline)
-- [x] Created `src/triage/loop.py` — async triage loop that polls SimSat, runs VLM, stores decisions
+- [x] Created `src/triage/loop.py` - async triage loop that polls SimSat, runs VLM, stores decisions
 - [x] Integrated loop into dashboard via FastAPI lifespan (background task)
 - [x] Live mode: uses SimSat simulation position + Sentinel-2 current endpoint
 - [x] Demo mode: when simulation not running (pos 0,0,0), cycles through 10 interesting Earth locations using historical Sentinel-2 endpoint
@@ -279,13 +279,13 @@
 #### Fine-Tuning Pipeline
 - [x] Cloned `leap-finetune` framework into `training/leap-finetune/`
 - [x] Studied VLM SFT data format: messages with `[{type: "image", image: path}, {type: "text", text: prompt}]`
-- [x] Created `training/scripts/prepare_triage_dataset.py` — downloads VRSBench (xiang709/VRSBench), converts captions to our triage JSON format with keyword-based priority assignment
-- [x] Created `training/configs/triage_vlm_sft.yaml` — local training config (LFM2.5-VL-450M, LoRA, 3 epochs)
-- [x] Created `training/configs/triage_vlm_sft_modal.yaml` — Modal H100 config (same + GPU/volume settings)
+- [x] Created `training/scripts/prepare_triage_dataset.py` - downloads VRSBench (xiang709/VRSBench), converts captions to our triage JSON format with keyword-based priority assignment
+- [x] Created `training/configs/triage_vlm_sft.yaml` - local training config (LFM2.5-VL-450M, LoRA, 3 epochs)
+- [x] Created `training/configs/triage_vlm_sft_modal.yaml` - Modal H100 config (same + GPU/volume settings)
 - [x] Tested data prep: 20 samples → 18 train / 2 eval JSONL, correct format verified
 - [x] VRSBench dataset: `xiang709/VRSBench` on HuggingFace, 29K captioning samples, uses streaming to avoid pyarrow parse error on nested fields
 
-#### Pending — needs Marcelo
+#### Pending - needs Marcelo
 - [ ] Create Modal account (`pip install modal && modal setup`)
 - [ ] Run full data prep: `python training/scripts/prepare_triage_dataset.py --limit 5000`
 - [ ] Run training: `cd training/leap-finetune && uv run leap-finetune ../configs/triage_vlm_sft_modal.yaml`

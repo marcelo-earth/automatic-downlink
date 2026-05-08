@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 6: Quick MPS training test — 1 epoch on 2 samples.
+"""Step 6: Quick MPS training test - 1 epoch on 2 samples.
 
 Tests whether LFM2.5-VL-450M backward pass works on Apple Silicon MPS.
 If this fails, we need Kaggle T4 for all training.
@@ -108,7 +108,7 @@ def main() -> None:
         weighted_loss = loss * weights.get(priority, 1.0)
         print(f"  Loss: {loss.item():.4f}, weighted ({priority}): {weighted_loss.item():.4f}")
 
-        # Backward pass — THIS IS THE TEST
+        # Backward pass - THIS IS THE TEST
         print(f"  Backward pass...", end=" ", flush=True)
         t2 = time.time()
         optimizer.zero_grad()
@@ -121,7 +121,7 @@ def main() -> None:
         optimizer.step()
         print(f"{time.time() - t3:.1f}s")
 
-        print(f"  PASS — step {step} complete")
+        print(f"  PASS - step {step} complete")
 
     print("\n" + "=" * 60)
     print("MPS TRAINING TEST: PASSED")

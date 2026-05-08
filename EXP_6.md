@@ -616,11 +616,11 @@ That is the version of the project most likely to both:
 
 ## Retrospective: v5 attempt (2026-04-22)
 
-v5 tried to fix the hazard gap by mixing the existing VRSBench supervision with 17 hand-labeled hazard samples (10x oversampled to 50 copies). Training converged cleanly (eval loss 2.24 → 1.03), but on the frozen real-domain eval the v5 model scored **CRITICAL 0/3 and HIGH 0/2** — actually worse than the unchanged baseline on `HIGH`. The predicted distribution had zero `CRITICAL` and zero `HIGH` across all 45 samples.
+v5 tried to fix the hazard gap by mixing the existing VRSBench supervision with 17 hand-labeled hazard samples (10x oversampled to 50 copies). Training converged cleanly (eval loss 2.24 → 1.03), but on the frozen real-domain eval the v5 model scored **CRITICAL 0/3 and HIGH 0/2** - actually worse than the unchanged baseline on `HIGH`. The predicted distribution had zero `CRITICAL` and zero `HIGH` across all 45 samples.
 
 Root cause was structural, not a tuning bug:
 
-1. **Data imbalance.** 2638 VRSBench + 50 hazard copies = 1.9% hazard signal. The model learned to write VRSBench-style captions ("The image sourced from GoogleEarth features...") and default to `MEDIUM` / `LOW`. On the Attica wildfire it wrote "a small town and a large parking lot" — it never saw the burn scar.
+1. **Data imbalance.** 2638 VRSBench + 50 hazard copies = 1.9% hazard signal. The model learned to write VRSBench-style captions ("The image sourced from GoogleEarth features...") and default to `MEDIUM` / `LOW`. On the Attica wildfire it wrote "a small town and a large parking lot" - it never saw the burn scar.
 2. **RGB-only input.** Active hazards (burn scars, flood water, stressed vegetation) are strongest in SWIR. Training on RGB-only asks the model to detect hazards from the weakest available band.
 3. **LoRA on vision tower.** LoRA only adapts the language head. The vision encoder, which actually needs to learn that SWIR composites carry hazard signal, was effectively frozen.
 4. **Oversampling vs. diversity.** 10x copies of 17 images teaches memorization of 17 scenes, not generalization across hazard types and conditions.
@@ -632,13 +632,13 @@ Based on the v5 post-mortem, the next training pass follows a structurally diffe
 
 1. **Drop VRSBench entirely** for this model. Pure real-domain supervision.
 2. **Capture pairs, not single images.** Every training sample is a co-registered `(RGB, SWIR)` pair for the same tile. SWIR is the primary hazard signal.
-3. **Programmatic grid sampling.** Locations × timestamps × spatial offsets, chosen so the same regions contribute both hazard-present and non-hazard frames — giving real class balance instead of forced oversampling.
+3. **Programmatic grid sampling.** Locations × timestamps × spatial offsets, chosen so the same regions contribute both hazard-present and non-hazard frames - giving real class balance instead of forced oversampling.
 4. **Frontier-model teacher labels.** Each `(RGB, SWIR)` pair is labeled by a frontier model against the hazard priority policy. No hand-labeling at scale.
 5. **Full fine-tune, not LoRA.** The vision tower needs to actually learn what SWIR composites look like. LoRA cannot retrain an encoder.
 6. **Temporal train/test split.** Older 80% of timestamps go to train, newest 20% to eval. Prevents near-duplicates from Sentinel-2's ~5-day revisit from leaking across the split.
-7. **Weighted hazard scope.** Wildfire and flood get the most samples (strongest SWIR signatures). Landslides and oil spills get smaller representation — the system still covers them in the demo but the model does its strongest work where the physics cooperates.
+7. **Weighted hazard scope.** Wildfire and flood get the most samples (strongest SWIR signatures). Landslides and oil spills get smaller representation - the system still covers them in the demo but the model does its strongest work where the physics cooperates.
 
-Target for the first pass: ~200 labeled `(RGB, SWIR)` pairs spread across all four hazards, with enough non-hazard frames from the same regions that the model learns the contrast — not just the positive class.
+Target for the first pass: ~200 labeled `(RGB, SWIR)` pairs spread across all four hazards, with enough non-hazard frames from the same regions that the model learns the contrast - not just the positive class.
 
 Success criterion stays the same as the rest of Exp 6: improvement on the frozen real-domain eval set, not training loss. Specifically, measurable `CRITICAL` and `HIGH` recall instead of zero.
 
@@ -649,8 +649,8 @@ Success criterion stays the same as the rest of Exp 6: improvement on the frozen
 Checkpoint: `LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-e4s14-20260427_043908`
 
 - **Overall: 6/11 (55%)** on temporal hold-out
-- CRITICAL: 0/4 — all predicted MEDIUM
-- MEDIUM: precision 0.55, recall 1.00 — model collapses everything to MEDIUM
+- CRITICAL: 0/4 - all predicted MEDIUM
+- MEDIUM: precision 0.55, recall 1.00 - model collapses everything to MEDIUM
 - LOW: 0/1 missed
 
 Root cause: MEDIUM dominated training at 22/57 samples (38.6%). Even though CRITICAL was upsampled 5x in v6c, the model learned a strong MEDIUM prior.
@@ -661,14 +661,14 @@ Root cause: MEDIUM dominated training at 22/57 samples (38.6%). Even though CRIT
 
 Checkpoint: `LFM2.5-VL-450M-vlm_sft-exp6_train-all-lr2em05-w0p2-no_lora-e4s16-20260430_053227`
 
-- **Overall: 6/11 (55%)** — no improvement over v6b
-- CRITICAL: 0/4 — still all predicted MEDIUM
-- MEDIUM: precision 0.55, recall 1.00 — pure MEDIUM collapse persists
+- **Overall: 6/11 (55%)** - no improvement over v6b
+- CRITICAL: 0/4 - still all predicted MEDIUM
+- MEDIUM: precision 0.55, recall 1.00 - pure MEDIUM collapse persists
 - Per-sample: all 4 CRITICAL misses are Valencia flood images
 
 The 5x CRITICAL upsampling was insufficient. With 22 MEDIUM samples vs 10 CRITICAL (before upsampling), even a 5x multiplier on CRITICAL (50 copies) didn't overcome the MEDIUM bias in this 450M model.
 
-**Decision:** v6d with aggressive rebalancing — CRITICAL 3x upsample + cut MEDIUM from 22 → 6.
+**Decision:** v6d with aggressive rebalancing - CRITICAL 3x upsample + cut MEDIUM from 22 → 6.
 
 ---
 
@@ -686,7 +686,7 @@ Training data rebalancing via `training/scripts/build_exp6d_train.py`:
 
 MEDIUM trimming strategy: kept flood/landslide MEDIUM samples, removed most wildfire MEDIUM (they were 13/22 of the MEDIUM pool and likely the source of the MEDIUM-drift bias).
 
-Config: `training/configs/triage_vlm_sft_v6d_modal.yaml` — same hyperparams as v6c, 5 epochs, full fine-tune.
+Config: `training/configs/triage_vlm_sft_v6d_modal.yaml` - same hyperparams as v6c, 5 epochs, full fine-tune.
 
 Kicked off on Modal H100 at 2026-05-05.
 
@@ -696,13 +696,13 @@ Kicked off on Modal H100 at 2026-05-05.
 
 Checkpoint: `LFM2.5-VL-450M-vlm_sft-exp6d_trai-…-20260506_021457/latest` (5 epochs)
 
-Eval loss curve: 1.73 (epoch 2) → 1.34 (epoch 3) → 1.24 (epoch 4) — clean convergence.
+Eval loss curve: 1.73 (epoch 2) → 1.34 (epoch 3) → 1.24 (epoch 4) - clean convergence.
 
 | Metric | v6b/v6c | v6d |
 |--------|---------|-----|
 | Overall accuracy | 6/11 (55%) | 4/11 (36%) |
 | CRITICAL recall | 0/4 (0%) | **3/4 (75%)** |
-| CRITICAL precision | — | 3/8 (38%) |
+| CRITICAL precision | - | 3/8 (38%) |
 | MEDIUM recall | 6/6 (100%) | 1/6 (17%) |
 
 Per-sample breakdown:
@@ -717,8 +717,8 @@ Per-sample breakdown:
 - `enga_ts20240527` (MEDIUM) → predicted MEDIUM ✓
 - `enga_ts20240607` (MEDIUM) → predicted CRITICAL ✗
 
-**Interpretation:** The rebalancing broke the MEDIUM-collapse and achieved strong CRITICAL recall (75%). The model now over-escalates flood-region tiles (spatial contamination — it learned "this region = flood" rather than "this image shows flooding"). This is an acceptable tradeoff: false positives mean extra downlink data, false negatives mean missing real disasters.
+**Interpretation:** The rebalancing broke the MEDIUM-collapse and achieved strong CRITICAL recall (75%). The model now over-escalates flood-region tiles (spatial contamination - it learned "this region = flood" rather than "this image shows flooding"). This is an acceptable tradeoff: false positives mean extra downlink data, false negatives mean missing real disasters.
 
 **Decision:** ship v6d as the final model. Push to HuggingFace, update Docker.
 
-**Framing for demo:** v6b/v6c detected 0/4 active hazard events. v6d detected 3/4, with 3 false alarms in flood-adjacent regions — a recall-first calibration appropriate for emergency triage.
+**Framing for demo:** v6b/v6c detected 0/4 active hazard events. v6d detected 3/4, with 3 false alarms in flood-adjacent regions - a recall-first calibration appropriate for emergency triage.

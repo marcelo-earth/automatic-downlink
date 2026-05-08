@@ -5,7 +5,7 @@
 Satellites in Low Earth Orbit capture terabytes of imagery daily but can only transmit megabytes per ground station pass. Today, downlink decisions are made with:
 - Naive approaches: download everything (wasteful, slow)
 - Rule-based filters: cloud percentage thresholds (misses everything else)
-- Task-specific CNNs: one model per detection task (cloud, fire, ships) — rigid, not generalizable
+- Task-specific CNNs: one model per detection task (cloud, fire, ships) - rigid, not generalizable
 
 Result: most captured data is never analyzed, or analyzed hours/days late. High-value images (disasters, anomalies) sit in a queue alongside empty ocean shots.
 
@@ -15,7 +15,7 @@ A Vision Language Model (LFM2.5-VL-450M) running on-board the satellite that:
 
 1. **Analyzes every captured image** and generates a natural language description
 2. **Assigns a priority level** (CRITICAL / HIGH / MEDIUM / LOW / SKIP) with justification
-3. **Optimizes downlink** — only transmits high-priority images + text summaries of everything else
+3. **Optimizes downlink** - only transmits high-priority images + text summaries of everything else
 
 ```
 Traditional:  Capture → Downlink ALL → Analyze on ground → Act (hours/days)
@@ -44,7 +44,7 @@ DPhi Space OmniSat satellite:
 - 1GB in-space storage
 - Docker runtime
 
-LFM2.5-VL-450M is 450M parameters — fits comfortably in 16GB with room for data buffers.
+LFM2.5-VL-450M is 450M parameters - fits comfortably in 16GB with room for data buffers.
 
 ## MVP Scope
 
@@ -77,7 +77,7 @@ LFM2.5-VL-450M is 450M parameters — fits comfortably in 16GB with room for dat
 | Criteria | Weight | Our Approach |
 |----------|--------|-------------|
 | Use of Satellite Imagery | 10% | SimSat API as core data source (Sentinel-2 + Mapbox) |
-| Innovation & Problem-Solution Fit | 35% | VLM triage is novel — nobody has done general-purpose prompt-steerable triage on-board. Clear product path (DPhi would want this as a feature) |
+| Innovation & Problem-Solution Fit | 35% | VLM triage is novel - nobody has done general-purpose prompt-steerable triage on-board. Clear product path (DPhi would want this as a feature) |
 | Technical Implementation | 35% | Fine-tuned model + working pipeline + Docker packaging. Must run without debugging |
 | Demo & Communication | 20% | Video explaining: the downlink bottleneck → why VLMs solve it → architecture → live demo |
 

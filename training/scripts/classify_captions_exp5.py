@@ -34,7 +34,7 @@ SKIP_KEYWORDS = {
     "low resolution", "artifact", "very dark",
 }
 
-# "dark" needs context — only skip if it describes the whole scene, not an object color
+# "dark" needs context - only skip if it describes the whole scene, not an object color
 SKIP_DARK_PATTERNS = [
     r'\bdark image\b', r'\bvery dark\b', r'\bdark scene\b',
     r'\bimage is dark\b', r'\btoo dark\b', r'\bpoorly lit\b',
@@ -82,7 +82,7 @@ def extract_scene_features(caption: str) -> Dict[str, any]:
     ]
     features["complexity"] = sum(1 for ind in complexity_indicators if ind in caption_lower)
 
-    # Disaster detection — strict: must be an actual disaster, not routine industrial
+    # Disaster detection - strict: must be an actual disaster, not routine industrial
     # "chimney emitting smoke" is normal operations, not a disaster
     is_industrial_smoke = (
         ("chimney" in caption_lower or "chimney" in caption_lower)
@@ -157,7 +157,7 @@ def classify_caption(caption: str, features: Dict) -> str:
     if features["is_water_only"]:
         return "SKIP"
 
-    # Water scenes — skip if water dominates and nothing notable on land
+    # Water scenes - skip if water dominates and nothing notable on land
     if ("water" in caption_lower or "ocean" in caption_lower or "sea" in caption_lower):
         notable_land = any(t in caption_lower for t in [
             "stadium", "bridge", "airport", "residential", "farm",
@@ -177,7 +177,7 @@ def classify_caption(caption: str, features: Dict) -> str:
     if any(kw in caption_lower for kw in HIGH_KEYWORDS):
         return "HIGH"
 
-    # Industrial facilities with active emissions — notable but not disaster
+    # Industrial facilities with active emissions - notable but not disaster
     if ("chimney" in caption_lower and
         ("smoke" in caption_lower or "emission" in caption_lower or "emitting" in caption_lower)):
         return "HIGH"

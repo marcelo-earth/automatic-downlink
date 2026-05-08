@@ -40,7 +40,7 @@ def main() -> None:
             batch.put_file(local_path, remote_path)
             print(f"  Queued {data_file} -> {remote_path}")
 
-    print("Done — all files uploaded to Modal volume.")
+    print("Done - all files uploaded to Modal volume.")
 
 
 if __name__ == "__main__":

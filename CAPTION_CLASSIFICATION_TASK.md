@@ -2,7 +2,7 @@
 
 ## Context
 
-We are building **automatic-downlink** — a Vision Language Model (LFM2.5-VL-450M, 450M parameters) that runs on-board a satellite, analyzes every captured image, and decides what to downlink to ground. It's for the AI in Space Hackathon (Liquid AI x DPhi Space).
+We are building **automatic-downlink** - a Vision Language Model (LFM2.5-VL-450M, 450M parameters) that runs on-board a satellite, analyzes every captured image, and decides what to downlink to ground. It's for the AI in Space Hackathon (Liquid AI x DPhi Space).
 
 The model needs to produce triage decisions like this:
 
@@ -10,14 +10,14 @@ The model needs to produce triage decisions like this:
 {
   "description": "Residential area with buildings damaged after earthquake, debris on roads",
   "priority": "CRITICAL",
-  "reasoning": "Earthquake damage with structural collapse — immediate alert for disaster response",
+  "reasoning": "Earthquake damage with structural collapse - immediate alert for disaster response",
   "categories": ["disaster", "urban", "infrastructure"]
 }
 ```
 
 ## The Problem
 
-We have 20,264 satellite image captions from VRSBench (written by humans who looked at the actual images). But VRSBench only provides the **description** — it does NOT provide priority, reasoning, or categories.
+We have 20,264 satellite image captions from VRSBench (written by humans who looked at the actual images). But VRSBench only provides the **description** - it does NOT provide priority, reasoning, or categories.
 
 In our first attempt, we assigned these labels using dumb keyword matching (`if "fire" in caption → CRITICAL`). This is bad because:
 - "Buildings damaged by earthquake" gets MEDIUM because it contains "building"
@@ -43,7 +43,7 @@ File: `training/data/classified_captions.jsonl`
 
 Each line must be:
 ```json
-{"id": 0, "priority": "MEDIUM", "reasoning": "Harbor infrastructure with no anomalies — routine monitoring", "categories": ["infrastructure", "water"]}
+{"id": 0, "priority": "MEDIUM", "reasoning": "Harbor infrastructure with no anomalies - routine monitoring", "categories": ["infrastructure", "water"]}
 ```
 
 The `id` field must match the input so we can join them later.
@@ -53,17 +53,17 @@ The `id` field must match the input so we can join them later.
 Assign based on **how urgent it is to downlink this image to ground**:
 
 - **CRITICAL**: Active disasters, fires, floods, explosions, volcanic activity, oil spills, structural collapse, anything requiring immediate ground response. These are rare.
-- **HIGH**: Suspicious or unusual activity — deforestation in progress, unauthorized construction, unusual vessel patterns, refugee camps, environmental damage that isn't an active emergency. Worth prioritizing.
-- **MEDIUM**: Routine scenes with identifiable content — cities, farms, ports, roads, normal shipping. Useful data but not urgent.
-- **LOW**: Low-information scenes — empty desert, barren terrain, snow/ice with nothing notable, sparse grassland. Exists but not worth bandwidth.
-- **SKIP**: No usable data — heavy cloud cover, fog, haze, empty ocean, image artifacts, overexposed/dark images. Don't waste bandwidth.
+- **HIGH**: Suspicious or unusual activity - deforestation in progress, unauthorized construction, unusual vessel patterns, refugee camps, environmental damage that isn't an active emergency. Worth prioritizing.
+- **MEDIUM**: Routine scenes with identifiable content - cities, farms, ports, roads, normal shipping. Useful data but not urgent.
+- **LOW**: Low-information scenes - empty desert, barren terrain, snow/ice with nothing notable, sparse grassland. Exists but not worth bandwidth.
+- **SKIP**: No usable data - heavy cloud cover, fog, haze, empty ocean, image artifacts, overexposed/dark images. Don't waste bandwidth.
 
 ### Reasoning
 
 Write 1 sentence explaining WHY this priority. Be specific to the content. Examples:
 
-- Good: "Active smoke plumes over forested area suggest ongoing wildfire — requires immediate ground alert"
-- Good: "Standard agricultural area with regular field patterns — routine monitoring, no anomalies"
+- Good: "Active smoke plumes over forested area suggest ongoing wildfire - requires immediate ground alert"
+- Good: "Standard agricultural area with regular field patterns - routine monitoring, no anomalies"
 - Bad: "Routine scene with identifiable features" (too generic, could apply to anything)
 - Bad: "Immediate threat detected" (doesn't say what the threat is)
 
@@ -98,7 +98,7 @@ model: sonnet
 3. Append results to `training/data/classified_captions.jsonl`
 4. Repeat until done
 
-Track progress in `training/data/classification_progress.txt` — just write the last processed ID so you can resume if interrupted.
+Track progress in `training/data/classification_progress.txt` - just write the last processed ID so you can resume if interrupted.
 
 ### Verification
 
@@ -115,4 +115,4 @@ Once this task is done, the main project will:
 2. Retrain the model on Modal with the new labels
 3. Evaluate improvement
 
-This is a knowledge distillation step — a large model (you) teaching a small model (450M params) how to reason about satellite image triage.
+This is a knowledge distillation step - a large model (you) teaching a small model (450M params) how to reason about satellite image triage.

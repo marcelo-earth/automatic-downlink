@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = 30
 
-# Real disaster sites — burn scars, flood damage, and landslide debris are
+# Real disaster sites - burn scars, flood damage, and landslide debris are
 # visible in Sentinel-2 imagery months/years after the event.
 # Two "normal" scenes at the end provide contrast (should produce SKIP/LOW).
 DEMO_LOCATIONS = [
@@ -34,8 +34,8 @@ DEMO_LOCATIONS = [
     ("Kelowna wildfire burn scar, BC Canada (Aug 2023)", 49.89, -119.49),
     ("Enga Province landslide, Papua New Guinea (May 2024)", -5.40, 143.00),
     ("Alexandroupoli wildfire, Greece (Aug 2023)", 41.10, 25.90),
-    ("Open Pacific Ocean (contrast — expect SKIP)", -10.00, -140.00),
-    ("Greenland ice sheet (contrast — expect SKIP)", 72.00, -40.00),
+    ("Open Pacific Ocean (contrast - expect SKIP)", -10.00, -140.00),
+    ("Greenland ice sheet (contrast - expect SKIP)", 72.00, -40.00),
 ]
 
 
@@ -48,7 +48,7 @@ async def run_triage_loop(
     scenario_state: dict | None = None,
 ) -> None:
     """Run the triage loop forever, appending decisions to the shared store."""
-    logger.info("Triage loop starting — loading model...")
+    logger.info("Triage loop starting - loading model...")
     model = TriageModel()
 
     await asyncio.to_thread(model.load)
@@ -77,13 +77,13 @@ async def run_triage_loop(
                     if len(decisions_store) > 200:
                         del decisions_store[: len(decisions_store) - 200]
                     logger.info(
-                        "Decision #%d: %s — %s",
+                        "Decision #%d: %s - %s",
                         len(decisions_store),
                         decision_dict["priority"],
                         decision_dict["description"][:60],
                     )
                 else:
-                    logger.info("Discarding stale decision — scenario changed mid-inference")
+                    logger.info("Discarding stale decision - scenario changed mid-inference")
             consecutive_errors = 0
         except Exception:
             consecutive_errors += 1
@@ -105,7 +105,7 @@ async def _wait_for_simsat(client: SimSatClient, timeout: float = 120) -> None:
             logger.info("SimSat API is ready.")
             return
         await asyncio.sleep(3)
-    logger.warning("SimSat API not reachable after %ss — will keep trying in loop.", timeout)
+    logger.warning("SimSat API not reachable after %ss - will keep trying in loop.", timeout)
 
 
 def _fetch_and_triage(
@@ -249,7 +249,7 @@ def _fetch_and_triage_scenario(
     scenario_state["frame_index"] = frame_idx + 1
     generation = scenario_state.get("generation", 0)
 
-    full_name = f"{scenario.name} — {frame.label}"
+    full_name = f"{scenario.name} - {frame.label}"
     logger.info("Scenario: %s @ %s", full_name, frame.timestamp)
 
     # Show ghost row immediately while we fetch imagery

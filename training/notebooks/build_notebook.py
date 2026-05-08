@@ -71,7 +71,7 @@ SYSTEM_PROMPT = (
     "Priority: CRITICAL (disasters, fires, floods), HIGH (deforestation, unusual activity, anomalies), "
     "MEDIUM (routine urban, agriculture), LOW (featureless desert, barren terrain), "
     "SKIP (heavy clouds >80%, empty ocean, image artifacts).\\n\\n"
-    "If the image is mostly white/bright with no ground features visible, it is cloud-covered — mark SKIP.\\n\\n"
+    "If the image is mostly white/bright with no ground features visible, it is cloud-covered - mark SKIP.\\n\\n"
     "Examples:\\n"
     '{"description": "Dense urban area with buildings and road network along a coastline", "priority": "MEDIUM", "reasoning": "Routine urban scene, no anomalies detected", "categories": ["urban", "infrastructure"]}\\n'
     '{"description": "Image almost entirely covered by clouds, no ground features visible", "priority": "SKIP", "reasoning": "Cloud cover exceeds 80%, no usable data", "categories": ["cloud_cover"]}\\n'
@@ -80,7 +80,7 @@ SYSTEM_PROMPT = (
     '{"description": "Fresh clearing in dense forest with exposed soil and new access road", "priority": "HIGH", "reasoning": "Possible deforestation activity with new road construction", "categories": ["deforestation", "vegetation", "environmental_change"]}'
 )
 
-# Cell 5: Build dataset — all samples, no downsampling
+# Cell 5: Build dataset - all samples, no downsampling
 cells.append({
     "cell_type": "code",
     "source": (
@@ -126,7 +126,7 @@ cells.append({
     "metadata": {"trusted": True}, "outputs": [], "execution_count": None
 })
 
-# Cell 6: Stratified 90/10 split — all samples, no downsampling
+# Cell 6: Stratified 90/10 split - all samples, no downsampling
 cells.append({
     "cell_type": "code",
     "source": (
@@ -298,7 +298,7 @@ cells.append({
 cells.append({
     "cell_type": "code",
     "source": (
-        "# === MERGE + TEST + UPLOAD — all in one cell ===\n"
+        "# === MERGE + TEST + UPLOAD - all in one cell ===\n"
         "import subprocess\n\n"
         "print(\"=\" * 60)\n"
         "print(\"STEP 1: Merging LoRA adapter with base model...\")\n"

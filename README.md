@@ -105,14 +105,14 @@ but have not produced consistent hazard detections against current Sentinel-2 ti
 
 ### Training Reproduction
 
-**Option A — Kaggle (free, recommended):**
+**Option A - Kaggle (free, recommended):**
 
 1. Upload `training/notebooks/finetune_kaggle.ipynb` to [Kaggle](https://www.kaggle.com)
 2. Enable GPU T4 x2 (Settings → Accelerator)
 3. Add your `HF_TOKEN` in Secrets
 4. Run all cells (~45 min)
 
-**Option B — Modal (paid):**
+**Option B - Modal (paid):**
 
 ```bash
 cd training/leap-finetune

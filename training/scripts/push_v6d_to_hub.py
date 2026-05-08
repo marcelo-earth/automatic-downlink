@@ -1,7 +1,7 @@
 """Push the v6d checkpoint from the Modal volume to HuggingFace Hub.
 
 Run after v6d training completes. The run directory name encodes the timestamp
-— update _RUN and _CKPT if the actual directory names differ.
+-update _RUN and _CKPT if the actual directory names differ.
 
 Usage (from training/leap-finetune/):
     PATH="$(pwd)/.venv/bin:$PATH" .venv/bin/python ../../scripts/push_v6d_to_hub.py
@@ -56,7 +56,7 @@ def push() -> str:
 
     print(f"Pushing from: {source}")
 
-    # Only upload inference-time files — skip optimizer states and training artifacts
+    # Only upload inference-time files - skip optimizer states and training artifacts
     INFERENCE_PATTERNS = (
         "config.json",
         "generation_config.json",

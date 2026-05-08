@@ -136,9 +136,9 @@ class TriageEngine:
         if white_frac > 0.6 or (brightness > 200 and std_rgb < 30):
             logger.info("Pre-filter: cloud cover (white=%.0f%%, bright=%.0f)", white_frac * 100, brightness)
             return {
-                "description": "Image dominated by cloud cover — no ground features visible.",
+                "description": "Image dominated by cloud cover - no ground features visible.",
                 "priority": "SKIP",
-                "reasoning": "Heavy cloud cover detected by pixel analysis — VLM skipped to save compute.",
+                "reasoning": "Heavy cloud cover detected by pixel analysis - VLM skipped to save compute.",
                 "categories": ["cloud_cover"],
             }
 
@@ -153,7 +153,7 @@ class TriageEngine:
             return {
                 "description": "Cloud and haze dominate the frame, leaving too little clear ground detail.",
                 "priority": "SKIP",
-                "reasoning": "Mixed bright cloud cover detected by pixel analysis — frame skipped before VLM inference.",
+                "reasoning": "Mixed bright cloud cover detected by pixel analysis - frame skipped before VLM inference.",
                 "categories": ["cloud_cover"],
             }
 
@@ -163,7 +163,7 @@ class TriageEngine:
             return {
                 "description": "Image is too dark to extract useful information.",
                 "priority": "SKIP",
-                "reasoning": "Dark/underexposed image detected by pixel analysis — VLM skipped.",
+                "reasoning": "Dark/underexposed image detected by pixel analysis - VLM skipped.",
                 "categories": [],
             }
 
@@ -178,7 +178,7 @@ class TriageEngine:
             return {
                 "description": "Bright barren terrain with limited actionable detail.",
                 "priority": "LOW",
-                "reasoning": "Overexposed low-information terrain detected by pixel analysis — minimal downlink value.",
+                "reasoning": "Overexposed low-information terrain detected by pixel analysis - minimal downlink value.",
                 "categories": ["terrain"],
             }
 
@@ -189,7 +189,7 @@ class TriageEngine:
                 return {
                     "description": "Featureless terrain with minimal visual variation.",
                     "priority": "LOW",
-                    "reasoning": "Low-contrast featureless scene detected by pixel analysis — minimal information value.",
+                    "reasoning": "Low-contrast featureless scene detected by pixel analysis - minimal information value.",
                     "categories": ["terrain"],
                 }
 
@@ -271,7 +271,7 @@ class TriageEngine:
         image_id = image_id or f"IMG_{uuid.uuid4().hex[:8].upper()}"
         signals = self._image_signals(image)
 
-        # Fast pixel check — skip VLM for obvious cloud/dark/empty scenes
+        # Fast pixel check - skip VLM for obvious cloud/dark/empty scenes
         prefilter_result = self._prefilter(image, signals=signals)
         override_reason = None
         if prefilter_result is not None:
@@ -452,7 +452,7 @@ class TriageEngine:
         return {
             "description": cleaned[:200] if cleaned else "Model output could not be parsed.",
             "priority": "LOW",
-            "reasoning": "Model output was not valid JSON — treating as low-value to conserve bandwidth.",
+            "reasoning": "Model output was not valid JSON - treating as low-value to conserve bandwidth.",
             "categories": [],
         }
 

@@ -61,7 +61,7 @@ The model is trained and prompted to detect three mission-critical hazards:
 
 ### Base model
 
-LFM2.5-VL-450M — Liquid AI's 450M-parameter vision-language model, chosen
+LFM2.5-VL-450M - Liquid AI's 450M-parameter vision-language model, chosen
 because the hackathon track requires an LFM2.5-VL model and its small size
 makes it viable for on-board satellite inference.
 
@@ -75,7 +75,7 @@ makes it viable for on-board satellite inference.
 | **v6d** | 5× CRITICAL + MEDIUM cut to 6 | **75% (3/4)** |
 
 Training infrastructure: Modal H100 serverless GPU, `leap-finetune` framework,
-full fine-tune (no LoRA — vision tower included), 5 epochs, LR 2e-5.
+full fine-tune (no LoRA - vision tower included), 5 epochs, LR 2e-5.
 
 Weights published to HuggingFace:
 `marcelo-earth/LFM2.5-VL-450M-satellite-triage-v6`
@@ -84,8 +84,8 @@ Weights published to HuggingFace:
 
 Each inference pass receives **two images**:
 
-1. **RGB** — natural color Sentinel-2 composite (`[red, green, blue]`)
-2. **SWIR false-color** — `[swir16, nir08, red]` — makes fire and water
+1. **RGB** - natural color Sentinel-2 composite (`[red, green, blue]`)
+2. **SWIR false-color** - `[swir16, nir08, red]` - makes fire and water
    spectrally distinct even under smoke or haze
 
 The model is fine-tuned on RGB+SWIR pairs, so it can reason across both
@@ -176,29 +176,29 @@ SimSat Orbit → current position (lat/lon/alt)
 automatic-downlink/
   src/
     triage/
-      engine.py       — triage pipeline (cloud pre-filter, dual-image routing)
-      model.py        — LFM2.5-VL-450M wrapper (generate / generate_dual)
-      prompts.py      — system + user prompts for triage (default / disaster / dual)
-      schemas.py      — TriageResult dataclass + priority enum
-      loop.py         — 30s polling loop, SimSat fetch, SWIR companion fetch
+      engine.py       - triage pipeline (cloud pre-filter, dual-image routing)
+      model.py        - LFM2.5-VL-450M wrapper (generate / generate_dual)
+      prompts.py      - system + user prompts for triage (default / disaster / dual)
+      schemas.py      - TriageResult dataclass + priority enum
+      loop.py         - 30s polling loop, SimSat fetch, SWIR companion fetch
     simsat/
-      client.py       — SimSat REST API client
+      client.py       - SimSat REST API client
     dashboard/
-      app.py          — FastAPI app: SSE feed, /api/stats, static UI
+      app.py          - FastAPI app: SSE feed, /api/stats, static UI
   training/
     data/
-      exp6_train.jsonl        — base training set (RGB+SWIR pairs)
-      exp6d_train.jsonl       — rebalanced set (5× CRITICAL, MEDIUM cut)
+      exp6_train.jsonl        - base training set (RGB+SWIR pairs)
+      exp6d_train.jsonl       - rebalanced set (5× CRITICAL, MEDIUM cut)
     configs/
-      triage_vlm_sft_v6d_modal.yaml  — leap-finetune config
+      triage_vlm_sft_v6d_modal.yaml  - leap-finetune config
     scripts/
-      build_exp6d_train.py    — class rebalancing script
-      push_v6d_to_hub.py      — push inference files to HuggingFace
+      build_exp6d_train.py    - class rebalancing script
+      push_v6d_to_hub.py      - push inference files to HuggingFace
   scripts/
-    evaluate_exp6_on_modal.py — Modal eval harness
-    labeling_prompt.md        — GPT-4V labeling instructions
-  EXP_6.md            — experiment log (all v6 runs, evals, decisions)
-  CHANGELOG.md        — daily session log
+    evaluate_exp6_on_modal.py - Modal eval harness
+    labeling_prompt.md        - GPT-4V labeling instructions
+  EXP_6.md            - experiment log (all v6 runs, evals, decisions)
+  CHANGELOG.md        - daily session log
   Dockerfile
   docker-compose.yml
 ```

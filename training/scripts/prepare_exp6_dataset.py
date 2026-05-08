@@ -84,7 +84,7 @@ def main() -> None:
         swir_vol_path = f"{IMAGE_ROOT_IN_VOLUME}/{swir_local.name}"
 
         hazard_type = meta.get("hazard_type", "unknown")
-        # Use labeler_notes as description — they're concise and don't start with
+        # Use labeler_notes as description - they're concise and don't start with
         # "RGB shows... SWIR confirms..." (which caused the model to use band names as JSON keys).
         assistant_json = json.dumps({
             "description": lab["labeler_notes"],
@@ -113,7 +113,7 @@ def main() -> None:
         else:
             eval_samples.append(sample)
 
-    # Upsample CRITICAL in training set — only 2 natural examples (4%) causes
+    # Upsample CRITICAL in training set - only 2 natural examples (4%) causes
     # the model to default to MEDIUM for everything uncertain. 5× repeat brings
     # CRITICAL to ~17% of the training set, matching its real-world importance.
     CRITICAL_UPSAMPLE = 5
@@ -127,7 +127,7 @@ def main() -> None:
         pct = c / len(train_samples) * 100 if train_samples else 0
         print(f"  {p:10s}: {c:4d} ({pct:5.1f}%)")
 
-    # Write JSONL (strip metadata keys before writing — keep only messages)
+    # Write JSONL (strip metadata keys before writing - keep only messages)
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     for path, samples in [
         (DATA_DIR / "exp6_train.jsonl", train_samples),

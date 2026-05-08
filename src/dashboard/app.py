@@ -1,4 +1,4 @@
-"""Ground station dashboard — visualizes triage decisions from the satellite."""
+"""Ground station dashboard - visualizes triage decisions from the satellite."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 MAX_DECISIONS = 200
 
-# In-memory stores — shared between dashboard routes and triage loop
+# In-memory stores - shared between dashboard routes and triage loop
 _decisions: list[dict] = []
 _current_analysis: dict = {}  # populated while inference is running
 _scenario_state: dict = {"active_key": None, "frame_index": 0, "generation": 0, "paused": True}
@@ -56,7 +56,7 @@ async def lifespan(app: FastAPI):
             )
         )
     else:
-        logger.info("No SIMSAT_URL set — dashboard-only mode (POST /api/decisions to add data)")
+        logger.info("No SIMSAT_URL set - dashboard-only mode (POST /api/decisions to add data)")
     yield
     if task is not None:
         task.cancel()
@@ -143,7 +143,7 @@ async def set_scenario(key: str):
     if first_frame is not None:
         _current_analysis.update({
             "generation": _scenario_state["generation"],
-            "location_name": f"{scenario.name} — {first_frame.label}",
+            "location_name": f"{scenario.name} - {first_frame.label}",
             "position": {"lat": scenario.lat, "lon": scenario.lon},
             "frame_timestamp": first_frame.timestamp,
             "frame_label": first_frame.label,

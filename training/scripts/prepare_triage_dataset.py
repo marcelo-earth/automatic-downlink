@@ -23,7 +23,7 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
 
-# Single source of truth — import from the inference module
+# Single source of truth - import from the inference module
 from src.triage.prompts import TRIAGE_SYSTEM_PROMPT, TRIAGE_USER_PROMPT
 
 # Keyword-based heuristic for assigning priority to VRSBench captions
@@ -93,11 +93,11 @@ def assign_categories(caption: str) -> list[str]:
 def assign_reasoning(caption: str, priority: str) -> str:
     """Generate a reasoning string for the triage decision."""
     reasons = {
-        "CRITICAL": "Immediate threat detected — requires urgent ground station alert",
-        "HIGH": "Significant activity or change detected — warrants priority downlink",
-        "MEDIUM": "Routine scene with identifiable features — standard downlink",
-        "LOW": "Low-information scene — thumbnail or summary sufficient",
-        "SKIP": "No usable data in this capture — skip downlink",
+        "CRITICAL": "Immediate threat detected - requires urgent ground station alert",
+        "HIGH": "Significant activity or change detected - warrants priority downlink",
+        "MEDIUM": "Routine scene with identifiable features - standard downlink",
+        "LOW": "Low-information scene - thumbnail or summary sufficient",
+        "SKIP": "No usable data in this capture - skip downlink",
     }
     return reasons.get(priority, "Standard triage assessment")
 
@@ -212,7 +212,7 @@ def prepare_local(
     if labels_by_id:
         logger.info("Using pre-classified labels (knowledge distillation)")
     else:
-        logger.info("No labels file — using keyword-based heuristics")
+        logger.info("No labels file - using keyword-based heuristics")
 
     images_dir = out / "images"
     images_dir.mkdir(exist_ok=True)
@@ -241,7 +241,7 @@ def prepare_local(
         img_root = images_dir
     logger.info("Image root: %s (%d .png files found)", img_root, len(png_files))
 
-    # Process items — extract captions and convert to SFT format
+    # Process items - extract captions and convert to SFT format
     samples = []
     caption_idx = 0
     skipped = 0

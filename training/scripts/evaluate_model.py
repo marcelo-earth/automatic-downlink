@@ -23,7 +23,7 @@ You are a satellite image triage system. Analyze the image and respond ONLY with
 
 Priority: CRITICAL (disasters, fires, floods), HIGH (deforestation, unusual activity, anomalies), MEDIUM (routine urban, agriculture), LOW (featureless desert, barren terrain), SKIP (heavy clouds >80%, empty ocean, image artifacts).
 
-If the image is mostly white/bright with no ground features visible, it is cloud-covered — mark SKIP.
+If the image is mostly white/bright with no ground features visible, it is cloud-covered - mark SKIP.
 
 Examples:
 {"description": "Dense urban area with buildings and road network along a coastline", "priority": "MEDIUM", "reasoning": "Routine urban scene, no anomalies detected", "categories": ["urban", "infrastructure"]}

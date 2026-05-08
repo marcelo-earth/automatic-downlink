@@ -83,7 +83,7 @@ def run_eval() -> dict:
     # Debug: show what's in the volume
     print("Volume root contents:", os.listdir("/satellite-vlm"))
     ckpt_exists = os.path.isdir(CHECKPOINT_DIR)
-    print(f"Checkpoint dir exists: {ckpt_exists} — {CHECKPOINT_DIR}")
+    print(f"Checkpoint dir exists: {ckpt_exists} - {CHECKPOINT_DIR}")
     if not ckpt_exists:
         # Try to find any checkpoint in the volume
         for entry in os.listdir("/satellite-vlm"):

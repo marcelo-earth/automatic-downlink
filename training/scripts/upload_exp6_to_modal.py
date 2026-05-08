@@ -28,7 +28,7 @@ def main() -> None:
         for local_rel in JSONL_FILES:
             local_path = REPO_ROOT / local_rel
             if not local_path.exists():
-                print(f"  MISSING: {local_rel} — run prepare_exp6_dataset.py first")
+                print(f"  MISSING: {local_rel} - run prepare_exp6_dataset.py first")
                 continue
             remote_path = f"data/{local_path.name}"
             batch.put_file(str(local_path), remote_path)
@@ -42,7 +42,7 @@ def main() -> None:
             name = Path(img_path).name
             batch.put_file(img_path, f"{IMAGES_REMOTE_DIR}/{name}")
 
-    print(f"Done — {len(pngs)} images + JSONL files uploaded to Modal volume.")
+    print(f"Done - {len(pngs)} images + JSONL files uploaded to Modal volume.")
 
 
 if __name__ == "__main__":

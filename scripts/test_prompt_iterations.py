@@ -1,4 +1,4 @@
-"""Iterate on triage prompts quickly — loads model once, tests multiple prompts."""
+"""Iterate on triage prompts quickly - loads model once, tests multiple prompts."""
 
 import json
 import logging
