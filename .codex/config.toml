@@ -1,0 +1,8 @@
+[mcp_servers.kaggle]
+args = [
+    "mcp-remote",
+    "https://www.kaggle.com/mcp",
+    "--header",
+    "Authorization: Bearer KGAT_43c0e1bbe07b9f6a20502437044afc22",
+]
+command = "npx"

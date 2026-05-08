@@ -23,7 +23,7 @@ For this project, that question is framed as **hazard triage**.
 - a compact VLM handles the harder scenes
 - the system emits a lightweight triage decision for downlink allocation
 
-Current priority semantics live in [`PRIORITY_POLICY.md`](PRIORITY_POLICY.md):
+Current priority semantics live in [`PRIORITY_POLICY.md`](docs/PRIORITY_POLICY.md):
 
 - `CRITICAL`: active hazard clearly visible
 - `HIGH`: strong hazard evidence, visible aftermath, or elevated hazard risk
@@ -87,7 +87,7 @@ flowchart TD
 - **Model weights:** [marcelo-earth/LFM2.5-VL-450M-satellite-triage](https://huggingface.co/marcelo-earth/LFM2.5-VL-450M-satellite-triage)
 - **Training labels:** [marcelo-earth/VRSBench-satellite-triage-labels](https://huggingface.co/datasets/marcelo-earth/VRSBench-satellite-triage-labels)
 
-Benchmarking and experiment notes live under [`evals/`](evals) and [`EXP_6.md`](EXP_6.md).
+Benchmarking and experiment notes live under [`evals/`](evals) and [`EXP_6.md`](experiments/EXP_6.md).
 
 ## Validated Demo Scenarios
 
@@ -147,7 +147,7 @@ Current scope is intentionally narrow and demo-defensible:
 - landslide
 
 The capability analysis is documented in
-[`DETECTION_CAPABILITIES.md`](DETECTION_CAPABILITIES.md).
+[`DETECTION_CAPABILITIES.md`](docs/DETECTION_CAPABILITIES.md).
 
 ## RGB + SWIR Direction
 
