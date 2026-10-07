@@ -184,6 +184,7 @@ training/
 ├── scripts/evaluate_model.py          # Stratified eval with metrics
 ├── notebooks/finetune_kaggle.ipynb    # Fine-tune on Kaggle (free GPU)
 └── configs/                           # Modal training configs
+tests/                                 # Unit tests (fake model, no weights needed)
 evals/
 ├── sentinel_eval_v1.jsonl             # Frozen reviewed benchmark manifest
 ├── review_batches/                    # Human-reviewed additions / relabels
@@ -200,6 +201,16 @@ evals/
 | `TRIAGE_PROFILE` | No | `default` or `disaster` |
 | `POLL_INTERVAL` | No | Seconds between triage runs (default: 30) |
 | `MODEL_ID` | No | Override model (default: fine-tuned model) |
+| `MODEL_REVISION` | No | HF commit to load (default: pinned v6d commit) |
+
+## Running Tests
+
+The tests use a fake model, so they run in under a second and never download weights.
+
+```bash
+uv pip install -e ".[dev]"
+pytest
+```
 
 ## License
 
