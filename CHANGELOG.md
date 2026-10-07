@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-06
+
+### Model revision pinned, ARCHITECTURE.md corrected
+
+- Pinned the HF model to the v6d commit (`c42df7c5`) in `Dockerfile` and `src/triage/model.py`. The `-v6` repo name holds the v6d weights; builds no longer float to whatever commit is latest.
+- Converted the system overview and data flow diagrams in `docs/ARCHITECTURE.md` from ASCII to Mermaid.
+- Fixed stale triage loop docs: `POLL_INTERVAL` (not `TRIAGE_INTERVAL`), prefilter runs before the VLM, dashboard polls REST (no SSE). Updated the repository layout.
+
 ## 2026-05-08
 
 ### Demo replay hardening and Sentinel no-data trimming
