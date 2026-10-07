@@ -16,8 +16,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# The "-v6" repo holds the v6d weights (HF commit c42df7c5, "v6d: CRITICAL-dominant fine-tune").
 MODEL_ID = os.environ.get("MODEL_ID", "marcelo-earth/LFM2.5-VL-450M-satellite-triage-v6")
-MODEL_REVISION = os.environ.get("MODEL_REVISION", None)  # use latest commit
+MODEL_REVISION = os.environ.get("MODEL_REVISION", "c42df7c5c77c85a12b2d059fe252f2f6bf5fd886")
 BASE_MODEL_ID = "LiquidAI/LFM2.5-VL-450M"
 
 # Recommended generation params from model card
