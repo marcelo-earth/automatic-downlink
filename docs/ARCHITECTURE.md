@@ -2,35 +2,20 @@
 
 ## System Overview
 
-```
-                              SIMULATED SATELLITE (SimSat)
-              ┌────────────────────────────────────────────────────────────┐
-              │                                                            │
-              │  ┌──────────────┐   RGB image   ┌──────────────────────┐  │
-              │  │  SimSat      │──────────────>│                      │  │
-              │  │  Orbit       │               │    Triage Engine     │  │
-              │  │  Simulator   │  SWIR image   │                      │  │
-              │  │              │──────────────>│  LFM2.5-VL-450M      │  │
-              │  │  (Sentinel-2 │               │  (fine-tuned v6d)    │  │
-              │  │   STAC/AWS)  │               │                      │  │
-              │  └──────────────┘               └──────────┬───────────┘  │
-              │                                            │              │
-              │                            CRITICAL / HIGH / MEDIUM /     │
-              │                            LOW / SKIP + reasoning         │
-              │                                            │              │
-              └────────────────────────────────────────────┼─────────────┘
-                                                           │
-                                          SIMULATED DOWNLINK (HTTP)
-                                                           │
-                                   ┌───────────────────────▼──────────────┐
-                                   │        Ground Station Dashboard       │
-                                   │                                       │
-                                   │  • Live triage feed                   │
-                                   │  • Bandwidth savings gauge            │
-                                   │  • Priority distribution              │
-                                   │  • Full image viewer (HIGH+)          │
-                                   │  • Satellite position                 │
-                                   └───────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph SimSat["Simulated satellite (SimSat)"]
+        orbit["SimSat orbit simulator<br/>Sentinel-2 STAC / AWS"]
+        engine["Triage engine<br/>LFM2.5-VL-450M (fine-tuned v6d)"]
+        orbit -->|RGB image| engine
+        orbit -->|SWIR image| engine
+    end
+
+    engine -->|"CRITICAL / HIGH / MEDIUM / LOW / SKIP + reasoning<br/>simulated downlink (HTTP)"| dashboard
+
+    subgraph Ground["Ground station dashboard"]
+        dashboard["Live triage feed<br/>Bandwidth savings gauge<br/>Priority distribution<br/>Full image viewer (HIGH+)<br/>Satellite position"]
+    end
 ```
 
 ## The Problem automatic-downlink Solves
@@ -78,7 +63,8 @@ Training infrastructure: Modal H100 serverless GPU, `leap-finetune` framework,
 full fine-tune (no LoRA - vision tower included), 5 epochs, LR 2e-5.
 
 Weights published to HuggingFace:
-`marcelo-earth/LFM2.5-VL-450M-satellite-triage-v6`
+`marcelo-earth/LFM2.5-VL-450M-satellite-triage-v6`. Despite the repo name, it
+holds the v6d weights; the app pins commit `c42df7c5` so every build loads v6d.
 
 ### Dual-image inference
 
@@ -131,33 +117,30 @@ Starts three services:
 
 ### Triage loop
 
-Every 30 seconds (configurable via `TRIAGE_INTERVAL`):
+Every 30 seconds by default (configurable via `POLL_INTERVAL`):
 1. Fetch current satellite position from SimSat
 2. Fetch RGB image and SWIR false-color composite for that position
-3. Run dual-image inference on LFM2.5-VL-450M
-4. Pre-filter clouds (skip if >90% white pixels)
-5. Post output to dashboard via server-sent events (SSE)
+3. Pre-filter cheap pixel signals (cloud, dark, featureless tiles) and skip the VLM when the frame is unusable
+4. Run dual-image inference on LFM2.5-VL-450M
+5. Store the decision; the dashboard polls the REST API (`/api/decisions`, `/api/stats`)
 
 ## Data Flow
 
-```
-SimSat Orbit → current position (lat/lon/alt)
-     │
-     ├─ GET /data/current/image/sentinel?bands=red,green,blue  → RGB
-     └─ GET /data/current/image/sentinel?bands=swir16,nir08,red → SWIR
-                    │
-                    ▼
-         LFM2.5-VL-450M (v6d)
-         [system: hazard triage + SWIR legend]
-         [user: RGB image + SWIR image + prompt]
-                    │
-                    ▼
-         {priority, description, reasoning}
-                    │
-              ┌─────┴──────┐
-              │             │
-           CRITICAL/HIGH   MEDIUM/LOW/SKIP
-           TRANSMIT_IMAGE  TRANSMIT_SUMMARY_ONLY
+```mermaid
+flowchart TD
+    pos["SimSat orbit<br/>current position (lat/lon/alt)"]
+    rgb["GET /data/current/image/sentinel<br/>bands=red,green,blue → RGB"]
+    swir["GET /data/current/image/sentinel<br/>bands=swir16,nir08,red → SWIR"]
+    vlm["LFM2.5-VL-450M (v6d)<br/>system: hazard triage + SWIR legend<br/>user: RGB image + SWIR image + prompt"]
+    out["priority, description, reasoning"]
+    hi["CRITICAL / HIGH<br/>TRANSMIT_IMAGE"]
+    lo["MEDIUM / LOW / SKIP<br/>TRANSMIT_SUMMARY_ONLY"]
+
+    pos --> rgb --> vlm
+    pos --> swir --> vlm
+    vlm --> out
+    out --> hi
+    out --> lo
 ```
 
 ## Deployment Target (OmniSat)
@@ -180,11 +163,12 @@ automatic-downlink/
       model.py        - LFM2.5-VL-450M wrapper (generate / generate_dual)
       prompts.py      - system + user prompts for triage (default / disaster / dual)
       schemas.py      - TriageResult dataclass + priority enum
-      loop.py         - 30s polling loop, SimSat fetch, SWIR companion fetch
+      loop.py         - polling loop (POLL_INTERVAL, default 30s), SimSat fetch, SWIR companion fetch
+      scenarios.py    - finite replay scenarios for the demo
     simsat/
       client.py       - SimSat REST API client
     dashboard/
-      app.py          - FastAPI app: SSE feed, /api/stats, static UI
+      app.py          - FastAPI app: /api/decisions, /api/stats, scenarios, static UI
   training/
     data/
       exp6_train.jsonl        - base training set (RGB+SWIR pairs)
@@ -197,7 +181,7 @@ automatic-downlink/
   scripts/
     evaluate_exp6_on_modal.py - Modal eval harness
     labeling_prompt.md        - GPT-4V labeling instructions
-  EXP_6.md            - experiment log (all v6 runs, evals, decisions)
+  experiments/EXP_6.md - experiment log (all v6 runs, evals, decisions)
   CHANGELOG.md        - daily session log
   Dockerfile
   docker-compose.yml
