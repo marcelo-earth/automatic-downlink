@@ -8,6 +8,11 @@
 - Converted the system overview and data flow diagrams in `docs/ARCHITECTURE.md` from ASCII to Mermaid.
 - Fixed stale triage loop docs: `POLL_INTERVAL` (not `TRIAGE_INTERVAL`), prefilter runs before the VLM, dashboard polls REST (no SSE). Updated the repository layout.
 
+### First test suite
+
+- Added `tests/` with 31 unit tests that run against a fake model (no weights, ~0.2s): JSON parsing fallbacks, prefilter rules, semantic consistency floor (including the "no thermal hotspots" regression), MEDIUM→LOW decision layer, dual vs single prompt routing, partial description streaming, bandwidth stats, and the Sentinel no-data border trim.
+- Documented `pytest` usage and `MODEL_REVISION` in the README.
+
 ## 2026-05-08
 
 ### Demo replay hardening and Sentinel no-data trimming
